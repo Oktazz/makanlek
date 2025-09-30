@@ -14,6 +14,7 @@ tinggi_pemain = 40
 posisi = [100, 380]
 
 score = 0
+level = 0
 
 makanan_timer = 0
 B_makanan_timer = 0
@@ -24,7 +25,7 @@ B_makanans = []
 def new_makanan():
     x = randint(50, lebar_layar-50)
     y = 0
-    speed = randint(3, 6)
+    speed = 5
     rect = pygame.Rect(x, y, 20, 20)
     return {"rect": rect, "speed": speed}
 
@@ -41,13 +42,17 @@ while (running):
 
     screen.fill((255,192,203))
 
-    if len(makanans) < 1:
+    jumlah_makanan = 1 + (score // 3)
+
+    if len(makanans) < jumlah_makanan:
         makanan_timer += 1
         if makanan_timer > 30:
             makanans.append(new_makanan())
             makanan_timer = 0
 
-    if len(B_makanans) < 2:
+    jumlah_B_makanan = 2 + (score // 5)
+
+    if len(B_makanans) < jumlah_B_makanan:
         B_makanan_timer += 1
         if B_makanan_timer > 40:
             B_makanans.append(new_B_makanan())
