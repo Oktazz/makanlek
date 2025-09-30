@@ -16,6 +16,7 @@ posisi = [100, 380]
 score = 0
 
 makanan_timer = 0
+B_makanan_timer = 0
 makanans = []
 B_makanan = 0
 B_makanans = []
@@ -23,7 +24,14 @@ B_makanans = []
 def new_makanan():
     x = randint(50, lebar_layar-50)
     y = 0
-    speed = randint(3, 7)
+    speed = randint(3, 6)
+    rect = pygame.Rect(x, y, 20, 20)
+    return {"rect": rect, "speed": speed}
+
+def new_B_makanan():
+    x = randint(50, lebar_layar-50)
+    y = 0
+    speed = randint(3, 6)
     rect = pygame.Rect(x, y, 20, 20)
     return {"rect": rect, "speed": speed}
 
@@ -39,6 +47,12 @@ while (running):
             makanans.append(new_makanan())
             makanan_timer = 0
 
+    if len(B_makanans) < 2:
+        B_makanan_timer += 1
+        if B_makanan_timer > 40:
+            B_makanans.append(new_B_makanan())
+            B_makanan_timer = 0
+
     for makanan in makanans[:]:
         makanan["rect"].top += makanan["speed"]
         if makanan["rect"].top > tinggi_layar:
@@ -48,6 +62,16 @@ while (running):
             makanans.remove(makanan)
             print("Score:", score)
         pygame.draw.rect(screen, (0,255,0), makanan["rect"])
+
+    for B_makanan in B_makanans[:]:
+        B_makanan["rect"].top += B_makanan["speed"]
+        if B_makanan["rect"].top > tinggi_layar:
+            B_makanans.remove(B_makanan)
+        if pygame.Rect(posisi[0], posisi[1], lebar_pemain, tinggi_pemain).colliderect(B_makanan["rect"]):
+            B_makanans.remove(B_makanan)
+            pygame.quit()
+        pygame.draw.rect(screen, (255,0,0), B_makanan["rect"])
+        
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
