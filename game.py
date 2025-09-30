@@ -9,9 +9,12 @@ screen = pygame.display.set_mode((lebar_layar, tinggi_layar))
 
 # ukuran objek
 lebar_pemain = 50
-tinggi_pemain = 40
+tinggi_pemain = 50
 
 posisi = [100, 380]
+
+player = pygame.image.load("resource/images/kucing.png")
+player = pygame.transform.scale(player, (lebar_pemain, tinggi_pemain))
 
 score = 0
 level = 0
@@ -91,7 +94,7 @@ while (running):
 
 
     
-    pygame.draw.rect(screen, (0,0,255), (posisi[0],posisi[1],lebar_pemain,tinggi_pemain))
+    screen.blit(player, (posisi[0], posisi[1]))
 
     pygame.display.update()
 
