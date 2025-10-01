@@ -24,7 +24,7 @@ lebar_pemain = 80
 tinggi_pemain = 80
 
 # --- Ground / Tanah ---
-ground_height = 100
+ground_height = 80
 ground_rect = pygame.Rect(0, VIRTUAL_HEIGHT - ground_height, VIRTUAL_WIDTH, ground_height)
 
 # Set player position based on ground
