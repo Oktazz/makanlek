@@ -32,12 +32,13 @@ BGM_FILE = os.path.join(ASSET_PATH, "sounds", "backsound.mp3")
 SFX_STEP = os.path.join(ASSET_PATH, "sounds", "footstep.mp3")
 SFX_EAT = os.path.join(ASSET_PATH, "sounds", "eat.wav")
 SFX_HIT = os.path.join(ASSET_PATH, "sounds", "hit.mp3")
+SFX_GAMEOVER = os.path.join(ASSET_PATH, "sounds", "game_over.wav")
 
 # -------- Recommended asset sizes (in pixels, relative to VIRTUAL) --------
 # - player: 80x80 (good default). For HD art you can use 160x160 and scale down.
 # - ground tile: width 128, height same as ground_height (see below), recommended 128x100
-# - snack: 40x40
-# - obstacle: 40x40
+# - snack: 60x60
+# - obstacle: 60x60
 # - menu thumbnails: 120x120
 #
 # The code will scale loaded images to these sizes automatically.
@@ -46,8 +47,8 @@ SFX_HIT = os.path.join(ASSET_PATH, "sounds", "hit.mp3")
 FPS = 60
 GROUND_HEIGHT = 100              # height of ground in virtual coords
 PLAYER_W, PLAYER_H = 80, 80      # default player sprite size
-SNACK_W, SNACK_H = 40, 40
-OBST_W, OBST_H = 40, 40
+SNACK_W, SNACK_H = 60, 60
+OBST_W, OBST_H = 60, 60
 MAX_LIVES = 9
 STEP_SOUND_INTERVAL = 12         # frames between step sfx while walking
 
@@ -91,6 +92,7 @@ bgm = BGM_FILE if os.path.exists(BGM_FILE) else None
 sfx_step = load_sound(SFX_STEP)
 sfx_eat = load_sound(SFX_EAT)
 sfx_hit = load_sound(SFX_HIT)
+sfx_gameover = load_sound(SFX_GAMEOVER)
 
 # play bgm loop when menu starts (we will manage play/pause)
 if bgm:
@@ -137,8 +139,14 @@ B_makanan_timer = 0
 # lives
 lives = MAX_LIVES
 
+# Achievement variables
+achievement_timer = 0
+show_achievement = False
+last_achievement_score = 0
+
 # UI fonts
 FONT = pygame.font.SysFont("arial", 28)
+ACHIEVEMENT_FONT = pygame.font.SysFont("arial", 48, bold=True)
 TITLE_FONT = pygame.font.SysFont("arial", 56, bold=True)
 
 # menu state: "main", "character", "assets", "playing", "pause", "gameover"
@@ -154,7 +162,7 @@ selected_obst = obst_img
 
 # helper to reset gameplay
 def reset_game():
-    global makanans, B_makanans, score, makanan_timer, B_makanan_timer, lives, player_pos
+    global makanans, B_makanans, score, makanan_timer, B_makanan_timer, lives, player_pos, achievement_timer, show_achievement, last_achievement_score
     makanans = []
     B_makanans = []
     score = 0
@@ -162,6 +170,9 @@ def reset_game():
     B_makanan_timer = 0
     lives = MAX_LIVES
     player_pos = [VIRTUAL_WIDTH//2, ground_rect.top - PLAYER_H]
+    achievement_timer = 0
+    show_achievement = False
+    last_achievement_score = 0
 
 # -------- UI helpers --------
 def draw_text(surface, text, pos, font=FONT, color=(255,255,255)):
@@ -180,6 +191,7 @@ frame_count = 0
 while running:
     dt = clock.tick(FPS)
     frame_count += 1
+    current_time = pygame.time.get_ticks()
 
     # handle events
     for event in pygame.event.get():
@@ -314,20 +326,20 @@ while running:
         for x in range(0, VIRTUAL_WIDTH, ground_tile_img.get_width()):
             virtual_surface.blit(ground_tile_img, (x, VIRTUAL_HEIGHT - GROUND_HEIGHT))
 
-        # spawn logic (same as previous)
-        jumlah_makanan = 1 + (score // 3)
+        # spawn logic
+        jumlah_makanan = 1 + (score // 5) # Reduced
         if len(makanans) < jumlah_makanan:
             makanan_timer += 1
-            if makanan_timer > 30:
+            if makanan_timer > 45: # Slightly slower spawn
                 x = randint(50, VIRTUAL_WIDTH-50)
                 rect = pygame.Rect(x, 0, SNACK_W, SNACK_H)
                 makanans.append({"rect": rect, "speed": 6})
                 makanan_timer = 0
 
-        jumlah_B_makanan = 2 + (score // 5)
+        jumlah_B_makanan = 1 + (score // 7) # Reduced
         if len(B_makanans) < jumlah_B_makanan:
             B_makanan_timer += 1
-            if B_makanan_timer > 40:
+            if B_makanan_timer > 60: # Slightly slower spawn
                 x = randint(50, VIRTUAL_WIDTH-50)
                 rect = pygame.Rect(x, 0, OBST_W, OBST_H)
                 B_makanans.append({"rect": rect, "speed": randint(4, 8)})
@@ -345,6 +357,12 @@ while running:
                 if sfx_eat:
                     sfx_eat.play()
                 makanans.remove(makanan)
+                # Achievement check
+                if score > 0 and score % 25 == 0 and score != last_achievement_score:
+                    show_achievement = True
+                    achievement_timer = current_time
+                    last_achievement_score = score
+
         for obst in B_makanans[:]:
             obst["rect"].top += obst["speed"]
             if obst["rect"].top > VIRTUAL_HEIGHT:
@@ -356,6 +374,8 @@ while running:
                 if sfx_hit:
                     sfx_hit.play()
                 if lives <= 0:
+                    if sfx_gameover:
+                        sfx_gameover.play()
                     state = "gameover"
 
         # Controls - keyboard both A/D and arrows
@@ -414,6 +434,19 @@ while running:
         for i in range(lives):
             x = VIRTUAL_WIDTH - 20 - (i+1)*(heart_w+6)
             pygame.draw.rect(virtual_surface, (255,0,0), (x, 20, heart_w, heart_w), border_radius=4)
+
+        # Achievement display
+        if show_achievement:
+            if current_time - achievement_timer < 3000: # Show for 3 seconds
+                ach_text = f"Achievement! {last_achievement_score} Points!"
+                text_img = ACHIEVEMENT_FONT.render(ach_text, True, (255, 215, 0))
+                text_rect = text_img.get_rect(center=(VIRTUAL_WIDTH // 2, VIRTUAL_HEIGHT // 4))
+                # Simple background for text
+                bg_rect = text_rect.inflate(20, 20)
+                pygame.draw.rect(virtual_surface, (60, 60, 80), bg_rect, border_radius=10)
+                virtual_surface.blit(text_img, text_rect)
+            else:
+                show_achievement = False
 
     else:
         # non-playing screens: draw backgrounds and UI
