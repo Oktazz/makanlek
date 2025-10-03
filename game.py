@@ -323,8 +323,9 @@ while running:
 
     # ---------- State updates ----------
     if state == "playing":
-        # Update game objects
-        virtual_surface.fill((255,192,203))  # background pink
+        sky_img = load_image(os.path.join(ASSET_PATH, "images", "sky.png"), (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
+        virtual_surface.blit(sky_img, (0, 0))
+
         # draw ground tiles across width
         for x in range(0, VIRTUAL_WIDTH, ground_tile_img.get_width()):
             virtual_surface.blit(ground_tile_img, (x, VIRTUAL_HEIGHT - GROUND_HEIGHT))
