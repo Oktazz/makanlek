@@ -244,6 +244,10 @@ while running:
             vy = int((my - y_pos) / scale)
 
             # handle clicks in menu screens
+            if state == "playing":
+                pause_btn_rect = pygame.Rect(20, 60, 100, 40)
+                if pause_btn_rect.collidepoint(vx, vy):
+                    state = "pause"
             if state == "main":
                 # simple button layout positions (virtual coords)
                 start_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 280, 300, 60)
@@ -434,11 +438,9 @@ while running:
         # HUD: score and lives
         draw_text(virtual_surface, f"Score: {score}", (20, 20), FONT, (0,0,0))
 
-        
-        # draw heart images instead of red squares
-        for i in range(lives):
-            x = VIRTUAL_WIDTH - 20 - (heart_img.get_width() * (i+1) + 6 * i)
-            virtual_surface.blit(heart_img, (x, 20))
+        # Tombol Pause di pojok kiri atas
+        pause_btn_rect = pygame.Rect(20, 60, 100, 40)
+        draw_button(virtual_surface, pause_btn_rect, "Pause", FONT, bg=(80,80,120))
 
 
         # Achievement display
