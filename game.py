@@ -88,7 +88,7 @@ ground_tile_img = load_image(GROUND_TILE, (128, GROUND_HEIGHT), fallback_color=(
 snack_img = load_image(SNACK_ASSET, (SNACK_W, SNACK_H), fallback_color=(0,200,0))
 obst_img = load_image(OBSTACLE_ASSET, (OBST_W, OBST_H), fallback_color=(200,0,0))
 heart_img = load_image(HEART_ASSET, (24, 24), fallback_color=(255,0,0))
-
+sky_img = load_image(os.path.join(ASSET_PATH, "images", "sky.png"), (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
 
 # sounds
 bgm = BGM_FILE if os.path.exists(BGM_FILE) else None
@@ -327,7 +327,7 @@ while running:
 
     # ---------- State updates ----------
     if state == "playing":
-        sky_img = load_image(os.path.join(ASSET_PATH, "images", "sky.png"), (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
+
         virtual_surface.blit(sky_img, (0, 0))
 
         # draw ground tiles across width
