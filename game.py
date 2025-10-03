@@ -33,6 +33,7 @@ SFX_STEP = os.path.join(ASSET_PATH, "sounds", "footstep.mp3")
 SFX_EAT = os.path.join(ASSET_PATH, "sounds", "eat.wav")
 SFX_HIT = os.path.join(ASSET_PATH, "sounds", "hit.mp3")
 SFX_GAMEOVER = os.path.join(ASSET_PATH, "sounds", "game_over.wav")
+HEART_ASSET = os.path.join(ASSET_PATH, "images", "love.png")
 
 # -------- Recommended asset sizes (in pixels, relative to VIRTUAL) --------
 # - player: 80x80 (good default). For HD art you can use 160x160 and scale down.
@@ -86,6 +87,8 @@ for name, path in PLAYER_ASSETS.items():
 ground_tile_img = load_image(GROUND_TILE, (128, GROUND_HEIGHT), fallback_color=(100,50,20))
 snack_img = load_image(SNACK_ASSET, (SNACK_W, SNACK_H), fallback_color=(0,200,0))
 obst_img = load_image(OBSTACLE_ASSET, (OBST_W, OBST_H), fallback_color=(200,0,0))
+heart_img = load_image(HEART_ASSET, (24, 24), fallback_color=(255,0,0))
+
 
 # sounds
 bgm = BGM_FILE if os.path.exists(BGM_FILE) else None
@@ -429,11 +432,13 @@ while running:
 
         # HUD: score and lives
         draw_text(virtual_surface, f"Score: {score}", (20, 20), FONT, (0,0,0))
-        # draw hearts
-        heart_w = 24
+
+        
+        # draw heart images instead of red squares
         for i in range(lives):
-            x = VIRTUAL_WIDTH - 20 - (i+1)*(heart_w+6)
-            pygame.draw.rect(virtual_surface, (255,0,0), (x, 20, heart_w, heart_w), border_radius=4)
+            x = VIRTUAL_WIDTH - 20 - (heart_img.get_width() * (i+1) + 6 * i)
+            virtual_surface.blit(heart_img, (x, 20))
+
 
         # Achievement display
         if show_achievement:
