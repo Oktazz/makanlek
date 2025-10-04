@@ -13,7 +13,7 @@ VIRTUAL_WIDTH, VIRTUAL_HEIGHT = 1280, 720  # design base (16:9)
 # Window initial size (starts at virtual res; user can resize)
 SCREEN_WIDTH, SCREEN_HEIGHT = VIRTUAL_WIDTH, VIRTUAL_HEIGHT
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
-pygame.display.set_caption("Kucing Catch Game")
+pygame.display.set_caption("Snack Scramble")
 
 # Virtual surface - draw game here, then scale to screen
 virtual_surface = pygame.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
@@ -28,9 +28,6 @@ PLAYER_ASSETS = {
 }
 GROUND_TILE = os.path.join(ASSET_PATH, "images" ,"ground.png")
 SNACK_ASSET = os.path.join(ASSET_PATH, "images" ,"ikan.png")
-SNACK_CARROT = os.path.join(ASSET_PATH, "images" ,"wortel.png")
-SNACK_BONE = os.path.join(ASSET_PATH, "images" ,"tulang.png")
-SNACK_CHEESE = os.path.join(ASSET_PATH, "images" ,"keju.png")
 OBSTACLE_ASSET = os.path.join(ASSET_PATH, "images" ,"bom.png")
 BGM_FILE = os.path.join(ASSET_PATH, "sounds", "backsound.mp3")
 SFX_STEP = os.path.join(ASSET_PATH, "sounds", "footstep.mp3")
@@ -93,6 +90,7 @@ snack_img = load_image(SNACK_ASSET, (SNACK_W, SNACK_H), fallback_color=(0,200,0)
 obst_img = load_image(OBSTACLE_ASSET, (OBST_W, OBST_H), fallback_color=(200,0,0))
 heart_img = load_image(HEART_ASSET, (24, 24), fallback_color=(255,0,0))
 
+
 # sounds
 bgm = BGM_FILE if os.path.exists(BGM_FILE) else None
 sfx_step = load_sound(SFX_STEP)
@@ -150,10 +148,24 @@ achievement_timer = 0
 show_achievement = False
 last_achievement_score = 0
 
-# UI fonts
-FONT = pygame.font.SysFont("arial", 28)
+# --- UI Theme Colors ---
+COLOR_BG = (252, 242, 244) # Light pink
+COLOR_ACCENT = (255, 205, 210) # Lighter button pink
+COLOR_ACCENT_DARK = (239, 154, 154) # Darker button pink
+COLOR_TEXT = (94, 74, 74) # Dark brown
+COLOR_TITLE = (229, 115, 115) # Title pink
+
+# --- UI Fonts ---
+try:
+    # Try to use a cuter font if available
+    TITLE_FONT_NAME = "comicsansms"
+    pygame.font.SysFont(TITLE_FONT_NAME, 20) # test if font exists
+except:
+    TITLE_FONT_NAME = "arial"
+
+FONT = pygame.font.SysFont("arial", 32)
 ACHIEVEMENT_FONT = pygame.font.SysFont("arial", 48, bold=True)
-TITLE_FONT = pygame.font.SysFont("arial", 56, bold=True)
+TITLE_FONT = pygame.font.SysFont(TITLE_FONT_NAME, 80, bold=True)
 
 # menu state: "main", "character", "assets", "playing", "pause", "gameover"
 state = "main"
@@ -165,7 +177,6 @@ selected_char_index = available_chars.index(selected_char_key)
 # selected assets
 selected_snack = snack_img
 selected_obst = obst_img
-
 
 # helper to reset gameplay
 def reset_game():
@@ -248,6 +259,10 @@ while running:
             vy = int((my - y_pos) / scale)
 
             # handle clicks in menu screens
+            if state == "playing":
+                pause_btn_rect = pygame.Rect(20, 60, 100, 40)
+                if pause_btn_rect.collidepoint(vx, vy):
+                    state = "pause"
             if state == "main":
                 # simple button layout positions (virtual coords)
                 start_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 280, 300, 60)
@@ -256,6 +271,9 @@ while running:
                 quit_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 520, 300, 60)
                 if start_btn.collidepoint(vx, vy):
                     reset_game()
+                    if bgm:
+                        # unpause if it was paused (e.g. after gameover)
+                        pygame.mixer.music.unpause()
                     state = "playing"
                 elif char_btn.collidepoint(vx, vy):
                     state = "character"
@@ -292,19 +310,19 @@ while running:
                     state = "main"
 
             elif state == "assets":
-                    # select snack/obst from two sample boxes
-                    snack_box = pygame.Rect(220, 260, 120, 120)
-                    obst_box = pygame.Rect(400, 260, 120, 120)
-                    if snack_box.collidepoint(vx, vy):
+                # select snack/obst from two sample boxes
+                snack_box = pygame.Rect(220, 260, 120, 120)
+                obst_box = pygame.Rect(400, 260, 120, 120)
+                if snack_box.collidepoint(vx, vy):
                     # toggle between default and another if exists (simple)
                     # if you had more assets you'd present list; here we'll just keep default
-                        selected_snack = snack_img
-                    if obst_box.collidepoint(vx, vy):
-                        selected_obst = obst_img
-                        back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, 520, 200, 50)
-                    if back_btn.collidepoint(vx, vy):
-                        state = "main"
-                    
+                    selected_snack = snack_img
+                if obst_box.collidepoint(vx, vy):
+                    selected_obst = obst_img
+                back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, 520, 200, 50)
+                if back_btn.collidepoint(vx, vy):
+                    state = "main"
+
             elif state == "pause":
                 # pause menu rects
                 resume_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 280, 300, 60)
@@ -321,13 +339,15 @@ while running:
                 main_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 340, 300, 60)
                 quit_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 420, 300, 60)
                 if main_btn.collidepoint(vx, vy):
+                    if bgm:
+                        pygame.mixer.music.unpause()
                     state = "main"
                 elif quit_btn.collidepoint(vx, vy):
                     running = False
 
     # ---------- State updates ----------
     if state == "playing":
-        sky_img = load_image(os.path.join(ASSET_PATH, "images", "sky.png"), (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
+
         virtual_surface.blit(sky_img, (0, 0))
 
         # draw ground tiles across width
@@ -382,6 +402,8 @@ while running:
                 if sfx_hit:
                     sfx_hit.play()
                 if lives <= 0:
+                    if bgm:
+                        pygame.mixer.music.pause()
                     if sfx_gameover:
                         sfx_gameover.play()
                     state = "gameover"
@@ -426,23 +448,26 @@ while running:
             player_image = player_idle_right if facing_right else player_idle_left
 
         # draw items
+        selected_snack_img = snack_images[selected_snack_key]
+        selected_obst_img = obstacle_images[selected_obstacle_key]
         for makanan in makanans:
             # draw snack image centered on rect
-            virtual_surface.blit(selected_snack, (makanan["rect"].x, makanan["rect"].y))
+            virtual_surface.blit(selected_snack_img, (makanan["rect"].x, makanan["rect"].y))
         for obst in B_makanans:
-            virtual_surface.blit(selected_obst, (obst["rect"].x, obst["rect"].y))
+            virtual_surface.blit(selected_obst_img, (obst["rect"].x, obst["rect"].y))
 
         # draw player
         virtual_surface.blit(player_image, (player_pos[0], player_pos[1]))
 
         # HUD: score and lives
         draw_text(virtual_surface, f"Score: {score}", (20, 20), FONT, (0,0,0))
-
-        
-        # draw heart images instead of red squares
+        # Draw lives
         for i in range(lives):
-            x = VIRTUAL_WIDTH - 20 - (heart_img.get_width() * (i+1) + 6 * i)
-            virtual_surface.blit(heart_img, (x, 20))
+            virtual_surface.blit(heart_img, (VIRTUAL_WIDTH - 40 - (i * 35), 15))
+
+        # Tombol Pause di pojok kiri atas
+        pause_btn_rect = pygame.Rect(20, 60, 100, 40)
+        draw_button(virtual_surface, pause_btn_rect, "Pause", FONT, bg=(80,80,120))
 
 
         # Achievement display
@@ -460,23 +485,27 @@ while running:
 
     else:
         # non-playing screens: draw backgrounds and UI
-        virtual_surface.fill((30,30,50))  # dark BG for menus
+        virtual_surface.fill(COLOR_BG)  # light pink BG for menus
 
         if state == "main":
             # title
-            draw_text(virtual_surface, "Kucing Catch Game", (VIRTUAL_WIDTH//2 - 220, 120), TITLE_FONT, (255, 230, 180))
+            title_img = TITLE_FONT.render("Snack Scramble", True, COLOR_TITLE)
+            title_rect = title_img.get_rect(center=(VIRTUAL_WIDTH//2, 150))
+            virtual_surface.blit(title_img, title_rect)
             # buttons
             start_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 280, 300, 60)
             char_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 360, 300, 60)
             asset_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 440, 300, 60)
             quit_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 520, 300, 60)
-            draw_button(virtual_surface, start_btn, "Start Game", FONT, bg=(40,160,40))
-            draw_button(virtual_surface, char_btn, "Character Select", FONT, bg=(40,120,200))
-            draw_button(virtual_surface, asset_btn, "Asset Select", FONT, bg=(200,120,40))
-            draw_button(virtual_surface, quit_btn, "Quit", FONT, bg=(160,40,40))
+            draw_button(virtual_surface, start_btn, "Start Game", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
+            draw_button(virtual_surface, char_btn, "Character Select", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
+            draw_button(virtual_surface, asset_btn, "Asset Select", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
+            draw_button(virtual_surface, quit_btn, "Quit", FONT, bg=COLOR_ACCENT_DARK, fg=COLOR_TEXT)
 
         elif state == "character":
-            draw_text(virtual_surface, "Choose Character", (VIRTUAL_WIDTH//2-170, 120), TITLE_FONT, (255,255,255))
+            title_img = TITLE_FONT.render("Choose Character", True, COLOR_TITLE)
+            title_rect = title_img.get_rect(center=(VIRTUAL_WIDTH//2, 150))
+            virtual_surface.blit(title_img, title_rect)
             # thumbnails
             start_x = 180
             start_y = 220
@@ -486,22 +515,22 @@ while running:
             for i, key in enumerate(available_chars):
                 rx = start_x + i*(thumb_w + gap)
                 r = pygame.Rect(rx, start_y, thumb_w, thumb_h)
-                pygame.draw.rect(virtual_surface, (60,60,60), r, border_radius=8)
+                pygame.draw.rect(virtual_surface, (255,255,255), r, border_radius=8)
                 # draw thumbnail scaled
                 thumb_img = pygame.transform.smoothscale(player_images[key], (thumb_w-20, thumb_h-20))
                 virtual_surface.blit(thumb_img, (rx+10, start_y+10))
-                draw_text(virtual_surface, key.capitalize(), (rx+10, start_y+thumb_h+8), FONT, (220,220,220))
+                draw_text(virtual_surface, key.capitalize(), (rx+10, start_y+thumb_h+8), FONT, COLOR_TEXT)
                 # highlight selected
                 if i == selected_char_index:
-                    pygame.draw.rect(virtual_surface, (255,255,0), r, 4, border_radius=8)
+                    pygame.draw.rect(virtual_surface, COLOR_ACCENT_DARK, r, 4, border_radius=8)
             # back button
             back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, 520, 200, 50)
-            draw_button(virtual_surface, back_btn, "Back", FONT)
+            draw_button(virtual_surface, back_btn, "Back", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
 
         elif state == "assets":
-            draw_text(virtual_surface, "Choose Asset", (VIRTUAL_WIDTH//2 -100, 100), TITLE_FONT)
-            draw_text(virtual_surface, "Snack ", (220, 220), FONT)
-            draw_text(virtual_surface, "Obstacle ", (400, 220), FONT)
+            draw_text(virtual_surface, "Asset Select", (VIRTUAL_WIDTH//2-120, 120), TITLE_FONT, (255,255,255))
+            draw_text(virtual_surface, "Snack (click to choose):", (180, 230), FONT)
+            draw_text(virtual_surface, "Obstacle (click to choose):", (380, 230), FONT)
             snack_box = pygame.Rect(220, 260, 120, 120)
             obst_box = pygame.Rect(400, 260, 120, 120)
             pygame.draw.rect(virtual_surface, (50,50,50), snack_box, border_radius=8)
@@ -514,21 +543,30 @@ while running:
             draw_button(virtual_surface, back_btn, "Back", FONT)
 
         elif state == "pause":
-            draw_text(virtual_surface, "Paused", (VIRTUAL_WIDTH//2-70, 120), TITLE_FONT)
+            # create a semi-transparent overlay
+            overlay = pygame.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 128))
+            virtual_surface.blit(overlay, (0,0))
+
+            title_img = TITLE_FONT.render("Paused", True, (255,255,255))
+            title_rect = title_img.get_rect(center=(VIRTUAL_WIDTH//2, 160))
+            virtual_surface.blit(title_img, title_rect)
             resume_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 280, 300, 60)
             mainmenu_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 360, 300, 60)
             quit_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 440, 300, 60)
-            draw_button(virtual_surface, resume_btn, "Resume", FONT, bg=(40,160,40))
-            draw_button(virtual_surface, mainmenu_btn, "Main Menu", FONT, bg=(40,120,200))
-            draw_button(virtual_surface, quit_btn, "Quit", FONT, bg=(160,40,40))
+            draw_button(virtual_surface, resume_btn, "Resume", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
+            draw_button(virtual_surface, mainmenu_btn, "Main Menu", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
+            draw_button(virtual_surface, quit_btn, "Quit", FONT, bg=COLOR_ACCENT_DARK, fg=COLOR_TEXT)
 
         elif state == "gameover":
-            draw_text(virtual_surface, "Game Over", (VIRTUAL_WIDTH//2-140, 160), TITLE_FONT, (255,60,60))
-            draw_text(virtual_surface, f"Score: {score}", (VIRTUAL_WIDTH//2-60, 260), FONT, (255,255,255))
+            title_img = TITLE_FONT.render("Game Over", True, COLOR_TITLE)
+            title_rect = title_img.get_rect(center=(VIRTUAL_WIDTH//2, 200))
+            virtual_surface.blit(title_img, title_rect)
+            draw_text(virtual_surface, f"Score: {score}", (VIRTUAL_WIDTH//2-80, 260), FONT, color=COLOR_TEXT)
             main_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 340, 300, 60)
             quit_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 420, 300, 60)
-            draw_button(virtual_surface, main_btn, "Main Menu", FONT, bg=(40,120,200))
-            draw_button(virtual_surface, quit_btn, "Quit", FONT, bg=(160,40,40))
+            draw_button(virtual_surface, main_btn, "Main Menu", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
+            draw_button(virtual_surface, quit_btn, "Quit", FONT, bg=COLOR_ACCENT_DARK, fg=COLOR_TEXT)
             # mouse click handling for these buttons handled earlier by mapping state and clicks
 
     # -------- Final scaling to screen with letterbox (maintain aspect ratio) --------
@@ -543,7 +581,7 @@ while running:
     x_pos = (SCREEN_WIDTH - new_w) // 2
     y_pos = (SCREEN_HEIGHT - new_h) // 2
 
-    screen.fill((0,0,0))
+    screen.fill(COLOR_BG)
     screen.blit(scaled_surface, (x_pos, y_pos))
     pygame.display.flip()
 
