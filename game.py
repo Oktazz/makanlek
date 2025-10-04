@@ -24,9 +24,13 @@ PLAYER_ASSETS = {
     "cat": os.path.join(ASSET_PATH, "images", "kucing.png"),
     "dog": os.path.join(ASSET_PATH, "images", "anjing.png"),
     "bunny": os.path.join(ASSET_PATH, "images" , "rabbit.png"),
+    "hamster": os.path.join(ASSET_PATH, "images" , "hamster.png"),
 }
 GROUND_TILE = os.path.join(ASSET_PATH, "images" ,"ground.png")
 SNACK_ASSET = os.path.join(ASSET_PATH, "images" ,"ikan.png")
+SNACK_CARROT = os.path.join(ASSET_PATH, "images" ,"wortel.png")
+SNACK_BONE = os.path.join(ASSET_PATH, "images" ,"tulang.png")
+SNACK_CHEESE = os.path.join(ASSET_PATH, "images" ,"keju.png")
 OBSTACLE_ASSET = os.path.join(ASSET_PATH, "images" ,"bom.png")
 BGM_FILE = os.path.join(ASSET_PATH, "sounds", "backsound.mp3")
 SFX_STEP = os.path.join(ASSET_PATH, "sounds", "footstep.mp3")
@@ -88,7 +92,6 @@ ground_tile_img = load_image(GROUND_TILE, (128, GROUND_HEIGHT), fallback_color=(
 snack_img = load_image(SNACK_ASSET, (SNACK_W, SNACK_H), fallback_color=(0,200,0))
 obst_img = load_image(OBSTACLE_ASSET, (OBST_W, OBST_H), fallback_color=(200,0,0))
 heart_img = load_image(HEART_ASSET, (24, 24), fallback_color=(255,0,0))
-
 
 # sounds
 bgm = BGM_FILE if os.path.exists(BGM_FILE) else None
@@ -162,6 +165,7 @@ selected_char_index = available_chars.index(selected_char_key)
 # selected assets
 selected_snack = snack_img
 selected_obst = obst_img
+
 
 # helper to reset gameplay
 def reset_game():
@@ -288,19 +292,19 @@ while running:
                     state = "main"
 
             elif state == "assets":
-                # select snack/obst from two sample boxes
-                snack_box = pygame.Rect(220, 260, 120, 120)
-                obst_box = pygame.Rect(400, 260, 120, 120)
-                if snack_box.collidepoint(vx, vy):
+                    # select snack/obst from two sample boxes
+                    snack_box = pygame.Rect(220, 260, 120, 120)
+                    obst_box = pygame.Rect(400, 260, 120, 120)
+                    if snack_box.collidepoint(vx, vy):
                     # toggle between default and another if exists (simple)
                     # if you had more assets you'd present list; here we'll just keep default
-                    selected_snack = snack_img
-                if obst_box.collidepoint(vx, vy):
-                    selected_obst = obst_img
-                back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, 520, 200, 50)
-                if back_btn.collidepoint(vx, vy):
-                    state = "main"
-
+                        selected_snack = snack_img
+                    if obst_box.collidepoint(vx, vy):
+                        selected_obst = obst_img
+                        back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, 520, 200, 50)
+                    if back_btn.collidepoint(vx, vy):
+                        state = "main"
+                    
             elif state == "pause":
                 # pause menu rects
                 resume_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 280, 300, 60)
@@ -495,9 +499,9 @@ while running:
             draw_button(virtual_surface, back_btn, "Back", FONT)
 
         elif state == "assets":
-            draw_text(virtual_surface, "Asset Select", (VIRTUAL_WIDTH//2-120, 120), TITLE_FONT, (255,255,255))
-            draw_text(virtual_surface, "Snack (click to choose):", (180, 230), FONT)
-            draw_text(virtual_surface, "Obstacle (click to choose):", (380, 230), FONT)
+            draw_text(virtual_surface, "Choose Asset", (VIRTUAL_WIDTH//2 -100, 100), TITLE_FONT)
+            draw_text(virtual_surface, "Snack ", (220, 220), FONT)
+            draw_text(virtual_surface, "Obstacle ", (400, 220), FONT)
             snack_box = pygame.Rect(220, 260, 120, 120)
             obst_box = pygame.Rect(400, 260, 120, 120)
             pygame.draw.rect(virtual_surface, (50,50,50), snack_box, border_radius=8)
