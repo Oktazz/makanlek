@@ -24,11 +24,18 @@ PLAYER_ASSETS = {
     "cat": os.path.join(ASSET_PATH, "images", "kucing.png"),
     "dog": os.path.join(ASSET_PATH, "images", "anjing.png"),
     "bunny": os.path.join(ASSET_PATH, "images" , "rabbit.png"),
-    "hamster": os.path.join(ASSET_PATH, "images" , "hamster.png"),
 }
 GROUND_TILE = os.path.join(ASSET_PATH, "images" ,"ground.png")
-SNACK_ASSET = os.path.join(ASSET_PATH, "images" ,"ikan.png")
-OBSTACLE_ASSET = os.path.join(ASSET_PATH, "images" ,"bom.png")
+SNACK_ASSETS = {
+    "fish": os.path.join(ASSET_PATH, "images", "ikan.png"),
+    "cheese": os.path.join(ASSET_PATH, "images", "keju.png"),
+    "carrot": os.path.join(ASSET_PATH, "images", "wortel.png"),
+}
+OBSTACLE_ASSETS = {
+    "bomb": os.path.join(ASSET_PATH, "images", "bom.png"),
+    "rock": os.path.join(ASSET_PATH, "images", "batu.png"),
+    "dog": os.path.join(ASSET_PATH, "images", "tai.png"),
+}
 BGM_FILE = os.path.join(ASSET_PATH, "sounds", "backsound.mp3")
 SFX_STEP = os.path.join(ASSET_PATH, "sounds", "footstep.mp3")
 SFX_EAT = os.path.join(ASSET_PATH, "sounds", "eat.wav")
@@ -86,10 +93,17 @@ for name, path in PLAYER_ASSETS.items():
     player_images[name] = load_image(path, (PLAYER_W, PLAYER_H), fallback_color=(180,180,180))
 
 ground_tile_img = load_image(GROUND_TILE, (128, GROUND_HEIGHT), fallback_color=(100,50,20))
-snack_img = load_image(SNACK_ASSET, (SNACK_W, SNACK_H), fallback_color=(0,200,0))
-obst_img = load_image(OBSTACLE_ASSET, (OBST_W, OBST_H), fallback_color=(200,0,0))
-heart_img = load_image(HEART_ASSET, (24, 24), fallback_color=(255,0,0))
 
+snack_images = {}
+for name, path in SNACK_ASSETS.items():
+    snack_images[name] = load_image(path, (SNACK_W, SNACK_H), fallback_color=(0,200,0))
+
+obstacle_images = {}
+for name, path in OBSTACLE_ASSETS.items():
+    obstacle_images[name] = load_image(path, (OBST_W, OBST_H), fallback_color=(200,0,0))
+
+heart_img = load_image(HEART_ASSET, (30, 30), fallback_color=(255,0,0))
+sky_img = load_image(os.path.join(ASSET_PATH, "images", "sky.png"), (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
 
 # sounds
 bgm = BGM_FILE if os.path.exists(BGM_FILE) else None
@@ -175,8 +189,10 @@ available_chars = list(player_images.keys())
 selected_char_index = available_chars.index(selected_char_key)
 
 # selected assets
-selected_snack = snack_img
-selected_obst = obst_img
+available_snacks = list(snack_images.keys())
+available_obstacles = list(obstacle_images.keys())
+selected_snack_key = available_snacks[0]
+selected_obstacle_key = available_obstacles[0]
 
 # helper to reset gameplay
 def reset_game():
@@ -310,16 +326,27 @@ while running:
                     state = "main"
 
             elif state == "assets":
-                # select snack/obst from two sample boxes
-                snack_box = pygame.Rect(220, 260, 120, 120)
-                obst_box = pygame.Rect(400, 260, 120, 120)
-                if snack_box.collidepoint(vx, vy):
-                    # toggle between default and another if exists (simple)
-                    # if you had more assets you'd present list; here we'll just keep default
-                    selected_snack = snack_img
-                if obst_box.collidepoint(vx, vy):
-                    selected_obst = obst_img
-                back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, 520, 200, 50)
+                # Asset selection logic
+                thumb_w, thumb_h, gap = 120, 120, 25
+                
+                # Snack selection
+                snack_start_x = (VIRTUAL_WIDTH - (len(available_snacks) * (thumb_w + gap) - gap)) // 2
+                snack_y = 250
+                for i, key in enumerate(available_snacks):
+                    r = pygame.Rect(snack_start_x + i * (thumb_w + gap), snack_y, thumb_w, thumb_h)
+                    if r.collidepoint(vx, vy):
+                        selected_snack_key = key
+
+                # Obstacle selection
+                obst_start_x = (VIRTUAL_WIDTH - (len(available_obstacles) * (thumb_w + gap) - gap)) // 2
+                obst_y = 450
+                for i, key in enumerate(available_obstacles):
+                    r = pygame.Rect(obst_start_x + i * (thumb_w + gap), obst_y, thumb_w, thumb_h)
+                    if r.collidepoint(vx, vy):
+                        selected_obstacle_key = key
+
+                # Back button
+                back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, 620, 200, 50)
                 if back_btn.collidepoint(vx, vy):
                     state = "main"
 
@@ -528,19 +555,39 @@ while running:
             draw_button(virtual_surface, back_btn, "Back", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
 
         elif state == "assets":
-            draw_text(virtual_surface, "Asset Select", (VIRTUAL_WIDTH//2-120, 120), TITLE_FONT, (255,255,255))
-            draw_text(virtual_surface, "Snack (click to choose):", (180, 230), FONT)
-            draw_text(virtual_surface, "Obstacle (click to choose):", (380, 230), FONT)
-            snack_box = pygame.Rect(220, 260, 120, 120)
-            obst_box = pygame.Rect(400, 260, 120, 120)
-            pygame.draw.rect(virtual_surface, (50,50,50), snack_box, border_radius=8)
-            pygame.draw.rect(virtual_surface, (50,50,50), obst_box, border_radius=8)
-            virtual_surface.blit(selected_snack, (snack_box.x + (snack_box.width - selected_snack.get_width())//2,
-                                                  snack_box.y + (snack_box.height - selected_snack.get_height())//2))
-            virtual_surface.blit(selected_obst, (obst_box.x + (obst_box.width - selected_obst.get_width())//2,
-                                                 obst_box.y + (obst_box.height - selected_obst.get_height())//2))
-            back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, 520, 200, 50)
-            draw_button(virtual_surface, back_btn, "Back", FONT)
+            title_img = TITLE_FONT.render("Asset Select", True, COLOR_TITLE)
+            title_rect = title_img.get_rect(center=(VIRTUAL_WIDTH//2, 120))
+            virtual_surface.blit(title_img, title_rect)
+            
+            thumb_w, thumb_h, gap = 120, 120, 25
+
+            # Draw Snack choices
+            draw_text(virtual_surface, "Choose your Snack", (VIRTUAL_WIDTH//2 - 150, 180), FONT, COLOR_TEXT)
+            snack_start_x = (VIRTUAL_WIDTH - (len(available_snacks) * (thumb_w + gap) - gap)) // 2
+            snack_y = 250
+            for i, key in enumerate(available_snacks):
+                r = pygame.Rect(snack_start_x + i * (thumb_w + gap), snack_y, thumb_w, thumb_h)
+                pygame.draw.rect(virtual_surface, (255,255,255), r, border_radius=8)
+                thumb_img = pygame.transform.smoothscale(snack_images[key], (thumb_w-20, thumb_h-20))
+                virtual_surface.blit(thumb_img, (r.x+10, r.y+10))
+                if key == selected_snack_key:
+                    pygame.draw.rect(virtual_surface, COLOR_ACCENT_DARK, r, 4, border_radius=8)
+
+            # Draw Obstacle choices
+            draw_text(virtual_surface, "Choose your Obstacle", (VIRTUAL_WIDTH//2 - 160, 380), FONT, COLOR_TEXT)
+            obst_start_x = (VIRTUAL_WIDTH - (len(available_obstacles) * (thumb_w + gap) - gap)) // 2
+            obst_y = 450
+            for i, key in enumerate(available_obstacles):
+                r = pygame.Rect(obst_start_x + i * (thumb_w + gap), obst_y, thumb_w, thumb_h)
+                pygame.draw.rect(virtual_surface, (255,255,255), r, border_radius=8)
+                thumb_img = pygame.transform.smoothscale(obstacle_images[key], (thumb_w-20, thumb_h-20))
+                virtual_surface.blit(thumb_img, (r.x+10, r.y+10))
+                if key == selected_obstacle_key:
+                    pygame.draw.rect(virtual_surface, COLOR_ACCENT_DARK, r, 4, border_radius=8)
+
+            # Back button
+            back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, 620, 200, 50)
+            draw_button(virtual_surface, back_btn, "Back", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
 
         elif state == "pause":
             # create a semi-transparent overlay
