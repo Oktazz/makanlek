@@ -24,6 +24,7 @@ PLAYER_ASSETS = {
     "cat": os.path.join(ASSET_PATH, "images", "kucing.png"),
     "dog": os.path.join(ASSET_PATH, "images", "anjing.png"),
     "bunny": os.path.join(ASSET_PATH, "images" , "rabbit.png"),
+    "hamster": os.path.join(ASSET_PATH, "images" , "hamster.png"),
 }
 GROUND_TILE = os.path.join(ASSET_PATH, "images" ,"ground.png")
 SNACK_ASSETS = {
