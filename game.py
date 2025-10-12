@@ -225,8 +225,9 @@ last_achievement_score = 0
 
 # --- UI Theme Colors ---
 COLOR_BG = (252, 242, 244) # Light pink
-COLOR_ACCENT = (239, 154, 154) # Lighter button pink
-COLOR_ACCENT_DARK = (239, 154, 154) # Darker button pink
+# ubah tombol jadi kuning/keemasan
+COLOR_ACCENT = (255, 223, 0)       # bright gold
+COLOR_ACCENT_DARK = (212, 175, 55) # darker gold (border/highlight)
 COLOR_TEXT = (94, 74, 74) # Dark brown
 COLOR_TITLE = (229, 115, 115) # Title pink
 
@@ -242,25 +243,54 @@ FONT = pygame.font.SysFont("arial", 32)
 ACHIEVEMENT_FONT = pygame.font.SysFont("arial", 48, bold=True)
 TITLE_FONT = pygame.font.SysFont(TITLE_FONT_NAME, 80, bold=True)
 
-# helper: render teks pixel-art (render kecil lalu scale integer, lalu tint)
-def render_pixel_text(text, color=(229,115,115), outline_color=(153, 102, 51), outline_thickness=2, base_size=28, pixel_scale=6, bold=True):
-    # render small without antialiasing for crisper blocks, then scale by integer factor
-    font = pygame.font.SysFont(TITLE_FONT_NAME, base_size, bold=bold)
-    surf = font.render(text, False, (255,255,255)).convert_alpha()  # antialias False -> crisper when scaled
-    w, h = surf.get_size()
-    # scale by integer factor to keep "pixel" look (use scale, not smoothscale)
-    surf = pygame.transform.scale(surf, (w * pixel_scale, h * pixel_scale))
-    # colored version (tint white -> desired color)
-    colored = surf.copy()
-    colored.fill(color + (225,), special_flags=pygame.BLEND_RGBA_MULT)
+# try load a local pixel font (put a .ttf in resource/fonts/pixel.ttf for best results)
+PIXEL_FONT_PATH = os.path.join(ASSET_PATH, "fonts", "pixel.ttf")
+if os.path.exists(PIXEL_FONT_PATH):
+    try:
+        PIXEL_FONT = pygame.font.Font(PIXEL_FONT_PATH, 14)  # size will be scaled integer later
+        print("Loaded pixel font:", PIXEL_FONT_PATH)
+    except Exception:
+        PIXEL_FONT = None
+else:
+    PIXEL_FONT = None
 
-   # scale outline thickness with pixel_scale for visibility
-    ot = max(1, int(outline_thickness * max(1, pixel_scale // 2)))
+# helper: render teks pixel-art (render kecil lalu scale integer, lalu tint)
+def render_pixel_text(text, color=(229,115,115), outline_color=(153, 102, 51), outline_thickness=2, base_size=12, pixel_scale=4, bold=True):
+    """
+    Render pixel-style text by:
+    - rendering at a small base_size without antialiasing,
+    - integer-scale the surface (pygame.transform.scale) to keep hard edges,
+    - tint the white pixels to color and build an outline by blitting offset masks.
+    """
+    # choose font: prefer loaded pixel font for sharpness
+    if PIXEL_FONT:
+        # create a font object at requested base_size (Font handles TTF sizes)
+        font = pygame.font.Font(PIXEL_FONT_PATH, base_size)
+    else:
+        font = pygame.font.SysFont(TITLE_FONT_NAME, base_size, bold=bold)
+
+    # render without antialias for crisper pixel blocks
+    surf = font.render(text, False, (255,255,255)).convert_alpha()
+    w, h = surf.get_size()
+    if w == 0 or h == 0:
+        return pygame.Surface((1,1), pygame.SRCALPHA)
+
+    # ensure pixel_scale is integer >=1
+    ps = max(1, int(pixel_scale))
+    surf = pygame.transform.scale(surf, (w * ps, h * ps))  # nearest-neighbor integer scaling
+
+    # tint main text (use full alpha)
+    colored = surf.copy()
+    colored.fill(color + (255,), special_flags=pygame.BLEND_RGBA_MULT)
+
+    # outline: thickness scaled with pixel_scale so it's visible
+    ot = max(1, int(outline_thickness * max(1, ps // 2)))
 
     out_w = surf.get_width() + ot * 2
     out_h = surf.get_height() + ot * 2
     outline_surf = pygame.Surface((out_w, out_h), pygame.SRCALPHA)
- # create a tinted mask for outline and blit it around offsets (use alpha 255)
+
+    # create outline mask once and blit around offsets
     outline_mask = surf.copy()
     outline_mask.fill(outline_color + (255,), special_flags=pygame.BLEND_RGBA_MULT)
     for dx in range(-ot, ot + 1):
@@ -269,8 +299,31 @@ def render_pixel_text(text, color=(229,115,115), outline_color=(153, 102, 51), o
                 continue
             outline_surf.blit(outline_mask, (dx + ot, dy + ot))
 
+    # main text on top
     outline_surf.blit(colored, (ot, ot))
     return outline_surf
+
+# NEW helper: render label pixel-art yang menyesuaikan skala agar muat di tombol
+def render_pixel_label_fit(text, fg_color, outline_color, max_w, max_h, base_size=10, bold=False):
+    """
+    Render a pixel label that fits inside max_w x max_h by choosing an integer scale factor.
+    Uses a small base_size so integer scale produces crisp blocks.
+    """
+    # use test font to get base glyph size
+    if PIXEL_FONT:
+        test_font = pygame.font.Font(PIXEL_FONT_PATH, base_size)
+    else:
+        test_font = pygame.font.SysFont(TITLE_FONT_NAME, base_size, bold=bold)
+    test_s = test_font.render(text, False, (255,255,255)).convert_alpha()
+    tw, th = test_s.get_size()
+    if tw <= 0 or th <= 0:
+        tw, th = 1, 1
+    # compute integer scale factor that fits both dimensions
+    scale = max(1, min(max_w // tw, max_h // th))
+    # safety cap to avoid enormous scale
+    scale = max(1, min(scale, 12))
+    # produce final pixel text with integer scale
+    return render_pixel_text(text, color=fg_color, outline_color=outline_color, outline_thickness=1, base_size=base_size, pixel_scale=scale, bold=bold)
 
 # menu state: "main", "character", "assets", "playing", "pause", "gameover", "victory"
 state = "main"
@@ -327,12 +380,26 @@ def draw_text(surface, text, pos, font=FONT, color=(255,255,255)):
     img = font.render(text, True, color)
     surface.blit(img, pos)
 
-def draw_button(surface, rect, text, font=FONT, bg=(50,50,50), fg=(255,255,255)):
-    pygame.draw.rect(surface, bg, rect, border_radius=6)
-    label = font.render(text, True, fg)
-    lx = rect.x + (rect.width - label.get_width())//2
-    ly = rect.y + (rect.height - label.get_height())//2
-    surface.blit(label, (lx, ly))
+def draw_button(surface, rect, text, font=FONT, bg=None, fg=COLOR_TEXT):
+    """
+    Draw a rounded button and place a pixel-art label centered.
+    - bg: background color tuple. If None, use GOLD accent.
+    - fg: label color (default dark brown).
+    """
+    if bg is None:
+        bg = COLOR_ACCENT
+
+    # button background
+    pygame.draw.rect(surface, bg, rect, border_radius=8)
+    # subtle 1px inner border for depth (avoid thick smooth lines)
+    inner = rect.inflate(-6, -6)
+    pygame.draw.rect(surface, COLOR_ACCENT_DARK, inner, 1, border_radius=6)
+
+    # render pixel label that fits inside rect
+    label_surf = render_pixel_label_fit(text, fg_color=fg, outline_color=(94, 74, 74), max_w=rect.width-12, max_h=rect.height-8, base_size=10, bold=True)
+    lx = rect.x + (rect.width - label_surf.get_width()) // 2
+    ly = rect.y + (rect.height - label_surf.get_height()) // 2
+    surface.blit(label_surf, (lx, ly))
 
 # -------- Main loop --------
 frame_count = 0
@@ -691,7 +758,13 @@ while running:
 
         # Tombol Pause di pojok kiri atas
         pause_btn_rect = pygame.Rect(20, 60, 100, 40)
-        draw_button(virtual_surface, pause_btn_rect, "Pause", FONT, bg=(80,80,120))
+        # draw clearer pause button using regular antialiased font for in-game HUD
+        pygame.draw.rect(virtual_surface, (80,80,120), pause_btn_rect, border_radius=8)
+        pygame.draw.rect(virtual_surface, COLOR_ACCENT_DARK, pause_btn_rect.inflate(-6, -6), 1, border_radius=6)
+        pause_label = FONT.render("Pause", True, (255, 255, 255))
+        lx = pause_btn_rect.x + (pause_btn_rect.width - pause_label.get_width()) // 2
+        ly = pause_btn_rect.y + (pause_btn_rect.height - pause_label.get_height()) // 2
+        virtual_surface.blit(pause_label, (lx, ly))
 
 
         # Achievement display
@@ -825,11 +898,8 @@ while running:
     new_w = int(VIRTUAL_WIDTH * scale)
     new_h = int(VIRTUAL_HEIGHT * scale)
 
-    # prefer nearest-neighbor scale when scale factor is (nearly) integer to keep pixel-art crisp
-    if abs(scale - round(scale)) < 0.01:
-        scaled_surface = pygame.transform.scale(virtual_surface, (new_w, new_h))
-    else:
-        scaled_surface = pygame.transform.smoothscale(virtual_surface, (new_w, new_h))
+    # use nearest-neighbor scaling to keep pixel-art crisp (avoid smoothscale blur)
+    scaled_surface = pygame.transform.scale(virtual_surface, (new_w, new_h))
     x_pos = (SCREEN_WIDTH - new_w) // 2
     y_pos = (SCREEN_HEIGHT - new_h) // 2
 
