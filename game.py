@@ -105,6 +105,10 @@ for name, path in OBSTACLE_ASSETS.items():
 
 heart_img = load_image(HEART_ASSET, (30, 30), fallback_color=(255,0,0))
 sky_img = load_image(os.path.join(ASSET_PATH, "images", "sky.png"), (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
+golden_food_img = pygame.Surface((SNACK_W, SNACK_H))
+golden_food_img.fill((255, 223, 0))
+shield_img = pygame.Surface((SNACK_W, SNACK_H))
+shield_img.fill((135, 206, 250))
 
 # sounds
 bgm = BGM_FILE if os.path.exists(BGM_FILE) else None
@@ -154,6 +158,12 @@ B_makanans = []
 score = 0
 makanan_timer = 0
 B_makanan_timer = 0
+golden_foods = []
+shields = []
+invincible = False
+invincible_timer = 0
+golden_food_timer = 0
+shields_timer = 0
 
 # lives
 lives = MAX_LIVES
@@ -401,6 +411,24 @@ while running:
                 B_makanans.append({"rect": rect, "speed": randint(4, 8)})
                 B_makanan_timer = 0
 
+        jumlah_golden_food = 1
+        if len(golden_foods) < jumlah_golden_food:
+            golden_food_timer += 1
+            if golden_food_timer > 600: # every 10 seconds
+                x = randint(50, VIRTUAL_WIDTH-50)
+                rect = pygame.Rect(x, 0, SNACK_W, SNACK_H)
+                golden_foods.append({"rect": rect, "speed": 5})
+                golden_food_timer = 0
+
+        jumlah_shields = 1
+        if len(shields) < jumlah_shields:
+            shields_timer += 1
+            if shields_timer > 900: # every 15 seconds
+                x = randint(50, VIRTUAL_WIDTH-50)
+                rect = pygame.Rect(x, 0, SNACK_W, SNACK_H)
+                shields.append({"rect": rect, "speed": 5})
+                shields_timer = 0
+
         # items move
         for makanan in makanans[:]:
             makanan["rect"].top += makanan["speed"]
@@ -426,15 +454,47 @@ while running:
             player_rect = pygame.Rect(player_pos[0], player_pos[1], PLAYER_W, PLAYER_H)
             if player_rect.colliderect(obst["rect"]):
                 B_makanans.remove(obst)
-                lives -= 1
-                if sfx_hit:
-                    sfx_hit.play()
-                if lives <= 0:
-                    if bgm:
-                        pygame.mixer.music.pause()
-                    if sfx_gameover:
-                        sfx_gameover.play()
-                    state = "gameover"
+                if not invincible:
+                    lives -= 1
+                    if sfx_hit:
+                        sfx_hit.play()
+                    if lives <= 0:
+                        if bgm:
+                            pygame.mixer.music.pause()
+                        if sfx_gameover:
+                            sfx_gameover.play()
+                        state = "gameover"
+
+        for food in golden_foods[:]:
+            food["rect"].top += food["speed"]
+            if food["rect"].top > VIRTUAL_HEIGHT:
+                golden_foods.remove(food)
+            player_rect = pygame.Rect(player_pos[0], player_pos[1], PLAYER_W, PLAYER_H)
+            if player_rect.colliderect(food["rect"]):
+                score += 10
+                if sfx_eat:
+                    sfx_eat.play()
+                golden_foods.remove(food)
+                #achiavevement check
+                if score > 0 and score % 25 == 0 and score != last_achievement_score:
+                    show_achievement = True
+                    achievement_timer = current_time
+                    last_achievement_score = score
+
+        for sh in shields[:]:
+            sh["rect"].top += sh["speed"]
+            if sh["rect"].top > VIRTUAL_HEIGHT:
+                shields.remove(sh)
+            player_rect = pygame.Rect(player_pos[0], player_pos[1], PLAYER_W, PLAYER_H)
+            if player_rect.colliderect(sh["rect"]):
+                invincible = True
+                invincible_timer = 5 * FPS  # 5 seconds of invincibility
+                shields.remove(sh)
+
+        if invincible:
+            invincible_timer -= 1
+            if invincible_timer <= 0:
+                invincible = False
 
         # Controls - keyboard both A/D and arrows
         keys = pygame.key.get_pressed()
@@ -483,9 +543,14 @@ while running:
             virtual_surface.blit(selected_snack_img, (makanan["rect"].x, makanan["rect"].y))
         for obst in B_makanans:
             virtual_surface.blit(selected_obst_img, (obst["rect"].x, obst["rect"].y))
+        for food in golden_foods:
+            virtual_surface.blit(golden_food_img, (food["rect"].x, food["rect"].y))
+        for sh in shields:
+            virtual_surface.blit(shield_img, (sh["rect"].x, sh["rect"].y))
 
         # draw player
-        virtual_surface.blit(player_image, (player_pos[0], player_pos[1]))
+        if not (invincible and (frame_count // 6) % 2 == 0):
+            virtual_surface.blit(player_image, (player_pos[0], player_pos[1]))
 
         # HUD: score and lives
         draw_text(virtual_surface, f"Score: {score}", (20, 20), FONT, (0,0,0))
