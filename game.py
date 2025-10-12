@@ -242,6 +242,36 @@ FONT = pygame.font.SysFont("arial", 32)
 ACHIEVEMENT_FONT = pygame.font.SysFont("arial", 48, bold=True)
 TITLE_FONT = pygame.font.SysFont(TITLE_FONT_NAME, 80, bold=True)
 
+# helper: render teks pixel-art (render kecil lalu scale integer, lalu tint)
+def render_pixel_text(text, color=(229,115,115), outline_color=(153, 102, 51), outline_thickness=2, base_size=28, pixel_scale=6, bold=True):
+    # render small without antialiasing for crisper blocks, then scale by integer factor
+    font = pygame.font.SysFont(TITLE_FONT_NAME, base_size, bold=bold)
+    surf = font.render(text, False, (255,255,255)).convert_alpha()  # antialias False -> crisper when scaled
+    w, h = surf.get_size()
+    # scale by integer factor to keep "pixel" look (use scale, not smoothscale)
+    surf = pygame.transform.scale(surf, (w * pixel_scale, h * pixel_scale))
+    # colored version (tint white -> desired color)
+    colored = surf.copy()
+    colored.fill(color + (225,), special_flags=pygame.BLEND_RGBA_MULT)
+
+   # scale outline thickness with pixel_scale for visibility
+    ot = max(1, int(outline_thickness * max(1, pixel_scale // 2)))
+
+    out_w = surf.get_width() + ot * 2
+    out_h = surf.get_height() + ot * 2
+    outline_surf = pygame.Surface((out_w, out_h), pygame.SRCALPHA)
+ # create a tinted mask for outline and blit it around offsets (use alpha 255)
+    outline_mask = surf.copy()
+    outline_mask.fill(outline_color + (255,), special_flags=pygame.BLEND_RGBA_MULT)
+    for dx in range(-ot, ot + 1):
+        for dy in range(-ot, ot + 1):
+            if dx == 0 and dy == 0:
+                continue
+            outline_surf.blit(outline_mask, (dx + ot, dy + ot))
+
+    outline_surf.blit(colored, (ot, ot))
+    return outline_surf
+
 # menu state: "main", "character", "assets", "playing", "pause", "gameover", "victory"
 state = "main"
 
@@ -686,8 +716,8 @@ while running:
             if front_overlay_img:
                 virtual_surface.blit(front_overlay_img, (0, 0))
 
-            # title
-            title_img = TITLE_FONT.render("Snack Scramble", True, COLOR_TITLE)
+            # title (pixel-art)
+            title_img = render_pixel_text("Snack Scramble", color=(229,115,115), base_size=26, pixel_scale=5, bold=True)
             title_rect = title_img.get_rect(center=(VIRTUAL_WIDTH//2, 150))
             virtual_surface.blit(title_img, title_rect)
             # buttons
@@ -701,7 +731,7 @@ while running:
             draw_button(virtual_surface, quit_btn, "Quit", FONT, bg=COLOR_ACCENT_DARK, fg=COLOR_TEXT)
 
         elif state == "character":
-            title_img = TITLE_FONT.render("Choose Character", True, COLOR_TITLE)
+            title_img = render_pixel_text("Choose Character", color=(229,115,115), base_size=22, pixel_scale=4, bold=True)
             title_rect = title_img.get_rect(center=(VIRTUAL_WIDTH//2, 150))
             virtual_surface.blit(title_img, title_rect)
             # thumbnails
@@ -726,7 +756,7 @@ while running:
             draw_button(virtual_surface, back_btn, "Back", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
 
         elif state == "assets":
-            title_img = TITLE_FONT.render("Asset Select", True, COLOR_TITLE)
+            title_img = render_pixel_text("Asset Select", color=(229,115,115), base_size=22, pixel_scale=4, bold=True)
             title_rect = title_img.get_rect(center=(VIRTUAL_WIDTH//2, 120))
             virtual_surface.blit(title_img, title_rect)
             
@@ -766,7 +796,7 @@ while running:
             overlay.fill((0, 0, 0, 128))
             virtual_surface.blit(overlay, (0,0))
 
-            title_img = TITLE_FONT.render("Paused", True, (255,255,255))
+            title_img = render_pixel_text("Paused", color=(255,255,255), base_size=22, pixel_scale=4, bold=True)
             title_rect = title_img.get_rect(center=(VIRTUAL_WIDTH//2, 160))
             virtual_surface.blit(title_img, title_rect)
             resume_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 280, 300, 60)
@@ -777,7 +807,7 @@ while running:
             draw_button(virtual_surface, quit_btn, "Quit", FONT, bg=COLOR_ACCENT_DARK, fg=COLOR_TEXT)
 
         elif state == "gameover":
-            title_img = TITLE_FONT.render("Game Over", True, COLOR_TITLE)
+            title_img = render_pixel_text("Game Over", color=(229,115,115), base_size=26, pixel_scale=4, bold=True)
             title_rect = title_img.get_rect(center=(VIRTUAL_WIDTH//2, 200))
             virtual_surface.blit(title_img, title_rect)
             draw_text(virtual_surface, f"Score: {score}", (VIRTUAL_WIDTH//2-80, 260), FONT, color=COLOR_TEXT)
@@ -795,7 +825,11 @@ while running:
     new_w = int(VIRTUAL_WIDTH * scale)
     new_h = int(VIRTUAL_HEIGHT * scale)
 
-    scaled_surface = pygame.transform.smoothscale(virtual_surface, (new_w, new_h))
+    # prefer nearest-neighbor scale when scale factor is (nearly) integer to keep pixel-art crisp
+    if abs(scale - round(scale)) < 0.01:
+        scaled_surface = pygame.transform.scale(virtual_surface, (new_w, new_h))
+    else:
+        scaled_surface = pygame.transform.smoothscale(virtual_surface, (new_w, new_h))
     x_pos = (SCREEN_WIDTH - new_w) // 2
     y_pos = (SCREEN_HEIGHT - new_h) // 2
 
