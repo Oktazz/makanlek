@@ -48,6 +48,7 @@ BGM_FILE_3 = os.path.join(ASSET_PATH, "sounds", "backsound_faster.mp3")
 SKY_IMG_2 = os.path.join(ASSET_PATH, "images", "sky_2.png")
 SKY_IMG_3 = os.path.join(ASSET_PATH, "images", "sky_3.png")
 SFX_LEVELUP = os.path.join(ASSET_PATH, "sounds", "levelup.wav")
+FRONT_OVERLAY = os.path.join(ASSET_PATH, "images", "bgtampilan.png")  # tambahkan ini
 
 
 # -------- Recommended asset sizes (in pixels, relative to VIRTUAL) --------
@@ -131,6 +132,24 @@ if not os.path.exists(SKY_IMG_3): # If file doesn't exist, create tinted version
     sky_img_3 = sky_img.copy()
     sky_img_3.fill((255, 150, 150), special_flags=pygame.BLEND_RGB_ADD)
 
+# muat overlay foreground (gunakan fallback debug jika file tidak ada)
+if os.path.exists(FRONT_OVERLAY):
+    try:
+        front_overlay_img = pygame.image.load(FRONT_OVERLAY).convert_alpha()
+        # only scale if sizes differ to avoid unnecessary smoothing/blur
+        if front_overlay_img.get_size() != (VIRTUAL_WIDTH, VIRTUAL_HEIGHT):
+            front_overlay_img = pygame.transform.scale(front_overlay_img, (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
+        # keep per-pixel alpha (do not call set_alpha unless you want uniform transparency)
+        print("Overlay loaded:", FRONT_OVERLAY)
+    except Exception as e:
+        print("Error loading overlay:", e)
+        front_overlay_img = None
+else:
+    print("Overlay file NOT found:", FRONT_OVERLAY)
+    # buat overlay debug semi-transparan agar terlihat kalau memang di-blit
+    front_overlay_img = pygame.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT), pygame.SRCALPHA)
+    front_overlay_img.fill((255, 0, 0, 120))  # merah semi-transparan debug
+
 golden_food_img = pygame.Surface((SNACK_W, SNACK_H))
 golden_food_img.fill((255, 223, 0))
 shield_img = pygame.Surface((SNACK_W, SNACK_H))
@@ -206,7 +225,7 @@ last_achievement_score = 0
 
 # --- UI Theme Colors ---
 COLOR_BG = (252, 242, 244) # Light pink
-COLOR_ACCENT = (255, 205, 210) # Lighter button pink
+COLOR_ACCENT = (239, 154, 154) # Lighter button pink
 COLOR_ACCENT_DARK = (239, 154, 154) # Darker button pink
 COLOR_TEXT = (94, 74, 74) # Dark brown
 COLOR_TITLE = (229, 115, 115) # Title pink
@@ -557,7 +576,7 @@ while running:
                 if sfx_eat:
                     sfx_eat.play()
                 golden_foods.remove(food)
-                #achiavevement check
+                #achiaveement check
                 if score > 0 and score % 25 == 0 and score != last_achievement_score:
                     show_achievement = True
                     achievement_timer = current_time
@@ -663,6 +682,10 @@ while running:
         virtual_surface.fill(COLOR_BG)  # light pink BG for menus
 
         if state == "main":
+            # blit overlay dulu sebagai dekorasi latar agar judul/menu tetap tajam
+            if front_overlay_img:
+                virtual_surface.blit(front_overlay_img, (0, 0))
+
             # title
             title_img = TITLE_FONT.render("Snack Scramble", True, COLOR_TITLE)
             title_rect = title_img.get_rect(center=(VIRTUAL_WIDTH//2, 150))
