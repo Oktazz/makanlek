@@ -43,6 +43,12 @@ SFX_EAT = os.path.join(ASSET_PATH, "sounds", "eat.wav")
 SFX_HIT = os.path.join(ASSET_PATH, "sounds", "hit.mp3")
 SFX_GAMEOVER = os.path.join(ASSET_PATH, "sounds", "game_over.wav")
 HEART_ASSET = os.path.join(ASSET_PATH, "images", "love.png")
+BGM_FILE_2 = os.path.join(ASSET_PATH, "sounds", "backsound_fast.mp3")
+BGM_FILE_3 = os.path.join(ASSET_PATH, "sounds", "backsound_faster.mp3")
+SKY_IMG_2 = os.path.join(ASSET_PATH, "images", "sky_2.png")
+SKY_IMG_3 = os.path.join(ASSET_PATH, "images", "sky_3.png")
+SFX_LEVELUP = os.path.join(ASSET_PATH, "sounds", "levelup.wav")
+
 
 # -------- Recommended asset sizes (in pixels, relative to VIRTUAL) --------
 # - player: 80x80 (good default). For HD art you can use 160x160 and scale down.
@@ -61,6 +67,14 @@ SNACK_W, SNACK_H = 60, 60
 OBST_W, OBST_H = 60, 60
 MAX_LIVES = 9
 STEP_SOUND_INTERVAL = 12         # frames between step sfx while walking
+
+# Character skills
+CHARACTER_STATS = {
+    "cat":     {"speed": 10, "lives": MAX_LIVES,   "points_per_snack": 1, "shield_duration": 5, "description": "Moves faster"},
+    "dog":     {"speed": 8,  "lives": MAX_LIVES + 2, "points_per_snack": 1, "shield_duration": 5, "description": "Starts with more lives"},
+    "bunny":   {"speed": 8,  "lives": MAX_LIVES,   "points_per_snack": 2, "shield_duration": 5, "description": "Gets more points from snacks"},
+    "hamster": {"speed": 7,  "lives": MAX_LIVES,   "points_per_snack": 1, "shield_duration": 8, "description": "Shields last longer"}
+}
 
 # -------- Utilities: safe image/sound loaders with fallback --------
 def load_image(path, size=None, fallback_color=None):
@@ -105,6 +119,18 @@ for name, path in OBSTACLE_ASSETS.items():
 
 heart_img = load_image(HEART_ASSET, (30, 30), fallback_color=(255,0,0))
 sky_img = load_image(os.path.join(ASSET_PATH, "images", "sky.png"), (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
+
+# Level-specific assets
+sky_img_2 = load_image(SKY_IMG_2, (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
+if not os.path.exists(SKY_IMG_2): # If file doesn't exist, create tinted version
+    sky_img_2 = sky_img.copy()
+    sky_img_2.fill((255, 200, 200), special_flags=pygame.BLEND_RGB_ADD)
+
+sky_img_3 = load_image(SKY_IMG_3, (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
+if not os.path.exists(SKY_IMG_3): # If file doesn't exist, create tinted version
+    sky_img_3 = sky_img.copy()
+    sky_img_3.fill((255, 150, 150), special_flags=pygame.BLEND_RGB_ADD)
+
 golden_food_img = pygame.Surface((SNACK_W, SNACK_H))
 golden_food_img.fill((255, 223, 0))
 shield_img = pygame.Surface((SNACK_W, SNACK_H))
@@ -116,6 +142,7 @@ sfx_step = load_sound(SFX_STEP)
 sfx_eat = load_sound(SFX_EAT)
 sfx_hit = load_sound(SFX_HIT)
 sfx_gameover = load_sound(SFX_GAMEOVER)
+sfx_levelup = load_sound(SFX_LEVELUP)
 
 # play bgm loop when menu starts (we will manage play/pause)
 if bgm:
@@ -133,6 +160,10 @@ fullscreen = False
 
 # Gameplay variables
 ground_rect = pygame.Rect(0, VIRTUAL_HEIGHT - GROUND_HEIGHT, VIRTUAL_WIDTH, GROUND_HEIGHT)
+game_level = 0
+game_tempo = 1.0
+current_sky_img = sky_img
+player_speed = CHARACTER_STATS["cat"]["speed"] # Default to cat
 
 # player default
 selected_char_key = "cat"
@@ -192,7 +223,7 @@ FONT = pygame.font.SysFont("arial", 32)
 ACHIEVEMENT_FONT = pygame.font.SysFont("arial", 48, bold=True)
 TITLE_FONT = pygame.font.SysFont(TITLE_FONT_NAME, 80, bold=True)
 
-# menu state: "main", "character", "assets", "playing", "pause", "gameover"
+# menu state: "main", "character", "assets", "playing", "pause", "gameover", "victory"
 state = "main"
 
 # For menu selections
@@ -207,17 +238,40 @@ selected_obstacle_key = available_obstacles[0]
 
 # helper to reset gameplay
 def reset_game():
-    global makanans, B_makanans, score, makanan_timer, B_makanan_timer, lives, player_pos, achievement_timer, show_achievement, last_achievement_score
+    global makanans, B_makanans, score, makanan_timer, B_makanan_timer, lives, player_pos, achievement_timer, show_achievement, last_achievement_score, game_level, game_tempo, current_sky_img, player_speed, invincible, invincible_timer, golden_foods, shields
     makanans = []
     B_makanans = []
+    golden_foods = []
+    shields = []
     score = 0
     makanan_timer = 0
     B_makanan_timer = 0
-    lives = MAX_LIVES
+    
+    # Apply character stats
+    stats = CHARACTER_STATS[selected_char_key]
+    lives = stats["lives"]
+    player_speed = stats["speed"]
+
     player_pos = [VIRTUAL_WIDTH//2, ground_rect.top - PLAYER_H]
     achievement_timer = 0
     show_achievement = False
     last_achievement_score = 0
+    
+    # Reset level and tempo
+    game_level = 0
+    game_tempo = 1.0
+    current_sky_img = sky_img
+    invincible = False
+    invincible_timer = 0
+
+    # Reset BGM to default
+    if bgm:
+        try:
+            pygame.mixer.music.load(bgm)
+            pygame.mixer.music.set_volume(0.4)
+            pygame.mixer.music.play(-1)
+        except Exception:
+            pass
 
 # -------- UI helpers --------
 def draw_text(surface, text, pos, font=FONT, color=(255,255,255)):
@@ -373,12 +427,11 @@ while running:
                 elif quit_btn.collidepoint(vx, vy):
                     running = False
             
-            elif state == "gameover":
+            elif state == "gameover" or state == "victory":
                 main_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 340, 300, 60)
                 quit_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 420, 300, 60)
                 if main_btn.collidepoint(vx, vy):
-                    if bgm:
-                        pygame.mixer.music.unpause()
+                    # BGM is reset in reset_game()
                     state = "main"
                 elif quit_btn.collidepoint(vx, vy):
                     running = False
@@ -386,7 +439,36 @@ while running:
     # ---------- State updates ----------
     if state == "playing":
 
-        virtual_surface.blit(sky_img, (0, 0))
+        # Level progression check
+        if score >= 150 and game_level < 3:
+            state = "victory"
+            if sfx_levelup: sfx_levelup.play()
+            # Stop processing this frame as "playing"
+            continue
+        elif score >= 100 and game_level < 2:
+            game_level = 2
+            game_tempo = 1.5
+            current_sky_img = sky_img_3
+            if sfx_levelup: sfx_levelup.play()
+            if os.path.exists(BGM_FILE_3):
+                try:
+                    pygame.mixer.music.load(BGM_FILE_3)
+                    pygame.mixer.music.set_volume(0.4)
+                    pygame.mixer.music.play(-1)
+                except Exception: pass
+        elif score >= 50 and game_level < 1:
+            game_level = 1
+            game_tempo = 1.2
+            current_sky_img = sky_img_2
+            if sfx_levelup: sfx_levelup.play()
+            if os.path.exists(BGM_FILE_2):
+                try:
+                    pygame.mixer.music.load(BGM_FILE_2)
+                    pygame.mixer.music.set_volume(0.4)
+                    pygame.mixer.music.play(-1)
+                except Exception: pass
+
+        virtual_surface.blit(current_sky_img, (0, 0))
 
         # draw ground tiles across width
         for x in range(0, VIRTUAL_WIDTH, ground_tile_img.get_width()):
@@ -501,12 +583,12 @@ while running:
         is_walking = False
         moved = False
         if keys[K_a] or keys[K_LEFT]:
-            player_pos[0] -= 8
+            player_pos[0] -= player_speed
             facing_right = False
             is_walking = True
             moved = True
         if keys[K_d] or keys[K_RIGHT]:
-            player_pos[0] += 8
+            player_pos[0] += player_speed
             facing_right = True
             is_walking = True
             moved = True
