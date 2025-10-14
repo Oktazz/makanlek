@@ -42,12 +42,14 @@ SFX_STEP = os.path.join(ASSET_PATH, "sounds", "footstep.mp3")
 SFX_EAT = os.path.join(ASSET_PATH, "sounds", "eat.wav")
 SFX_HIT = os.path.join(ASSET_PATH, "sounds", "hit.mp3")
 SFX_GAMEOVER = os.path.join(ASSET_PATH, "sounds", "game_over.wav")
+SFX_VICTORY = os.path.join(ASSET_PATH, "sounds", "victory.mp3")
 HEART_ASSET = os.path.join(ASSET_PATH, "images", "love.png")
 BGM_FILE_2 = os.path.join(ASSET_PATH, "sounds", "backsound_fast.mp3")
 BGM_FILE_3 = os.path.join(ASSET_PATH, "sounds", "backsound_faster.mp3")
 SKY_IMG_2 = os.path.join(ASSET_PATH, "images", "sky_2.png")
 SKY_IMG_3 = os.path.join(ASSET_PATH, "images", "sky_3.png")
-SFX_LEVELUP = os.path.join(ASSET_PATH, "sounds", "levelup.wav")
+SFX_POWERUP = os.path.join(ASSET_PATH, "sounds", "power.wav")
+SFX_LEVELUP = os.path.join(ASSET_PATH, "sounds" "levelup.wav")
 FRONT_OVERLAY = os.path.join(ASSET_PATH, "images", "bgtampilan.png")  # tambahkan ini
 
 
@@ -62,7 +64,7 @@ FRONT_OVERLAY = os.path.join(ASSET_PATH, "images", "bgtampilan.png")  # tambahka
 
 # -------- Game settings --------
 FPS = 60
-GROUND_HEIGHT = 100              # height of ground in virtual coords
+GROUND_HEIGHT = 120               # height of ground in virtual coords
 PLAYER_W, PLAYER_H = 80, 80      # default player sprite size
 SNACK_W, SNACK_H = 60, 60
 OBST_W, OBST_H = 60, 60
@@ -108,7 +110,7 @@ player_images = {}
 for name, path in PLAYER_ASSETS.items():
     player_images[name] = load_image(path, (PLAYER_W, PLAYER_H), fallback_color=(180,180,180))
 
-ground_tile_img = load_image(GROUND_TILE, (128, GROUND_HEIGHT), fallback_color=(100,50,20))
+ground_tile_img = load_image(GROUND_TILE, (1080, GROUND_HEIGHT), fallback_color=(100,50,20))
 
 snack_images = {}
 for name, path in SNACK_ASSETS.items():
@@ -150,17 +152,21 @@ else:
     front_overlay_img = pygame.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT), pygame.SRCALPHA)
     front_overlay_img.fill((255, 0, 0, 120))  # merah semi-transparan debug
 
-golden_food_img = pygame.Surface((SNACK_W, SNACK_H))
-golden_food_img.fill((255, 223, 0))
-shield_img = pygame.Surface((SNACK_W, SNACK_H))
-shield_img.fill((135, 206, 250))
+golden_food_img = load_image(os.path.join(ASSET_PATH, "images", "apple.png"), (SNACK_W, SNACK_H))
+shield_img = load_image(os.path.join(ASSET_PATH, "images", "perisai.png"), (SNACK_W, SNACK_H))
+youwin_img = load_image(os.path.join(ASSET_PATH, "images", "youwin.png"), (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
+gameover_img = load_image(os.path.join(ASSET_PATH, "images", "gameover.png"), (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
 
 # sounds
 bgm = BGM_FILE if os.path.exists(BGM_FILE) else None
 sfx_step = load_sound(SFX_STEP)
+if sfx_step:
+    sfx_step.set_volume(0.15)
 sfx_eat = load_sound(SFX_EAT)
 sfx_hit = load_sound(SFX_HIT)
 sfx_gameover = load_sound(SFX_GAMEOVER)
+sfx_victory = load_sound(SFX_VICTORY)
+sfx_powerup = load_sound(SFX_POWERUP)
 sfx_levelup = load_sound(SFX_LEVELUP)
 
 # play bgm loop when menu starts (we will manage play/pause)
@@ -205,7 +211,6 @@ step_timer = 0
 # Spawned items
 makanans = []
 B_makanans = []
-score = 0
 makanan_timer = 0
 B_makanan_timer = 0
 golden_foods = []
@@ -345,7 +350,7 @@ def reset_game():
     B_makanans = []
     golden_foods = []
     shields = []
-    score = 0
+    score = 149
     makanan_timer = 0
     B_makanan_timer = 0
     
@@ -376,7 +381,22 @@ def reset_game():
             pass
 
 # -------- UI helpers --------
-def draw_text(surface, text, pos, font=FONT, color=(255,255,255)):
+def draw_text(surface, text, pos, font=FONT, color=(255,255,255), outline_color=None, outline_width=1):
+    x, y = pos
+    # 1. render the outline
+    if outline_color:
+        outline_img = font.render(text, True, outline_color)
+        # blit in 8 directions
+        surface.blit(outline_img, (x-outline_width, y-outline_width))
+        surface.blit(outline_img, (x,               y-outline_width))
+        surface.blit(outline_img, (x+outline_width, y-outline_width))
+        surface.blit(outline_img, (x-outline_width, y))
+        surface.blit(outline_img, (x+outline_width, y))
+        surface.blit(outline_img, (x-outline_width, y+outline_width))
+        surface.blit(outline_img, (x,               y+outline_width))
+        surface.blit(outline_img, (x+outline_width, y+outline_width))
+    
+    # 2. render the main text on top
     img = font.render(text, True, color)
     surface.blit(img, pos)
 
@@ -544,13 +564,9 @@ while running:
                     running = False
             
             elif state == "gameover" or state == "victory":
-                main_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 340, 300, 60)
-                quit_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 420, 300, 60)
+                main_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, VIRTUAL_HEIGHT - 150, 300, 60)
                 if main_btn.collidepoint(vx, vy):
-                    # BGM is reset in reset_game()
                     state = "main"
-                elif quit_btn.collidepoint(vx, vy):
-                    running = False
 
     # ---------- State updates ----------
     if state == "playing":
@@ -558,7 +574,10 @@ while running:
         # Level progression check
         if score >= 150 and game_level < 3:
             state = "victory"
-            if sfx_levelup: sfx_levelup.play()
+            if bgm:
+                pygame.mixer.music.pause()
+            if sfx_victory:
+                sfx_victory.play()
             # Stop processing this frame as "playing"
             continue
         elif score >= 100 and game_level < 2:
@@ -687,6 +706,7 @@ while running:
             if player_rect.colliderect(sh["rect"]):
                 invincible = True
                 invincible_timer = 5 * FPS  # 5 seconds of invincibility
+                sfx_powerup.play()
                 shields.remove(sh)
 
         if invincible:
@@ -751,7 +771,7 @@ while running:
             virtual_surface.blit(player_image, (player_pos[0], player_pos[1]))
 
         # HUD: score and lives
-        draw_text(virtual_surface, f"Score: {score}", (20, 20), FONT, (0,0,0))
+        draw_text(virtual_surface, f"Score: {score}", (20, 20), FONT, color=(255,255,255), outline_color=(0,0,0), outline_width=2)
         # Draw lives
         for i in range(lives):
             virtual_surface.blit(heart_img, (VIRTUAL_WIDTH - 40 - (i * 35), 15))
@@ -880,15 +900,14 @@ while running:
             draw_button(virtual_surface, quit_btn, "Quit", FONT, bg=COLOR_ACCENT_DARK, fg=COLOR_TEXT)
 
         elif state == "gameover":
-            title_img = render_pixel_text("Game Over", color=(229,115,115), base_size=26, pixel_scale=4, bold=True)
-            title_rect = title_img.get_rect(center=(VIRTUAL_WIDTH//2, 200))
-            virtual_surface.blit(title_img, title_rect)
-            draw_text(virtual_surface, f"Score: {score}", (VIRTUAL_WIDTH//2-80, 260), FONT, color=COLOR_TEXT)
-            main_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 340, 300, 60)
-            quit_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 420, 300, 60)
+            virtual_surface.blit(gameover_img, (0, 0))
+            main_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, VIRTUAL_HEIGHT - 150, 300, 60)
             draw_button(virtual_surface, main_btn, "Main Menu", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
-            draw_button(virtual_surface, quit_btn, "Quit", FONT, bg=COLOR_ACCENT_DARK, fg=COLOR_TEXT)
-            # mouse click handling for these buttons handled earlier by mapping state and clicks
+
+        elif state == "victory":
+            virtual_surface.blit(youwin_img, (0, 0))
+            main_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, VIRTUAL_HEIGHT - 150, 300, 60)
+            draw_button(virtual_surface, main_btn, "Main Menu", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
 
     # -------- Final scaling to screen with letterbox (maintain aspect ratio) --------
     # calculate scale factor
