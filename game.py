@@ -350,7 +350,7 @@ def reset_game():
     B_makanans = []
     golden_foods = []
     shields = []
-    score = 10
+    score = 0
     makanan_timer = 0
     B_makanan_timer = 0
     
