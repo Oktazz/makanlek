@@ -51,6 +51,8 @@ SKY_IMG_3 = os.path.join(ASSET_PATH, "images", "sky_3.png")
 SFX_POWERUP = os.path.join(ASSET_PATH, "sounds", "power.wav")
 SFX_LEVELUP = os.path.join(ASSET_PATH, "sounds" "levelup.wav")
 FRONT_OVERLAY = os.path.join(ASSET_PATH, "images", "bgtampilan.png")  # tambahkan ini
+VICTORY_BG = os.path.join(ASSET_PATH, "images", "bg.win.png")     # <- new: victory background
+GAMEOVER_BG = os.path.join(ASSET_PATH, "images", "bg.lose.png")  # <- new: gameover background
 
 
 # -------- Recommended asset sizes (in pixels, relative to VIRTUAL) --------
@@ -154,8 +156,12 @@ else:
 
 golden_food_img = load_image(os.path.join(ASSET_PATH, "images", "apple.png"), (SNACK_W, SNACK_H))
 shield_img = load_image(os.path.join(ASSET_PATH, "images", "perisai.png"), (SNACK_W, SNACK_H))
-youwin_img = load_image(os.path.join(ASSET_PATH, "images", "youwin.png"), (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
-gameover_img = load_image(os.path.join(ASSET_PATH, "images", "gameover.png"), (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
+youwin_img = load_image(os.path.join(ASSET_PATH, "images", "bg.win.png"), (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
+
+# load victory background (falls back to solid/dark surface if not found)
+victory_bg_img = load_image(VICTORY_BG, (VIRTUAL_WIDTH, VIRTUAL_HEIGHT), fallback_color=(30, 30, 60))
+# load gameover background (falls back to dark/red surface if not found)
+gameover_bg_img = load_image(GAMEOVER_BG, (VIRTUAL_WIDTH, VIRTUAL_HEIGHT), fallback_color=(40, 10, 10))
 
 # sounds
 bgm = BGM_FILE if os.path.exists(BGM_FILE) else None
@@ -900,12 +906,39 @@ while running:
             draw_button(virtual_surface, quit_btn, "Quit", FONT, bg=COLOR_ACCENT_DARK, fg=COLOR_TEXT)
 
         elif state == "gameover":
-            virtual_surface.blit(gameover_img, (0, 0))
+            # draw gameover background (or fallback color)
+            if gameover_bg_img:
+                virtual_surface.blit(gameover_bg_img, (0, 0))
+            else:
+                virtual_surface.fill((40, 10, 10))
+            # draw a clear "Game Over" title with panel for contrast
+            title_img = render_pixel_text("Game Over", color=COLOR_TITLE, outline_color=(20,12,6), outline_thickness=3, base_size=20, pixel_scale=5, bold=True)
+            title_rect = title_img.get_rect(center=(VIRTUAL_WIDTH//2, 200))
+            panel_w, panel_h = title_rect.width + 40, title_rect.height + 20
+            panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+            panel.fill((0,0,0,170))  # semi-transparent dark panel behind title
+            virtual_surface.blit(panel, (title_rect.x - 20, title_rect.y - 10))
+            virtual_surface.blit(title_img, title_rect)
+
             main_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, VIRTUAL_HEIGHT - 150, 300, 60)
             draw_button(virtual_surface, main_btn, "Main Menu", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
 
         elif state == "victory":
-            virtual_surface.blit(youwin_img, (0, 0))
+            # draw victory background (or fallback color) and optional overlay
+            if victory_bg_img:
+                virtual_surface.blit(victory_bg_img, (0, 0))
+            else:
+                virtual_surface.fill((30, 30, 60))
+            # optional: draw youwin overlay if present (centered)
+            if youwin_img:
+                yw_rect = youwin_img.get_rect()
+                # if youwin_img is fullscreen it will cover bg; otherwise center it
+                if yw_rect.size == (VIRTUAL_WIDTH, VIRTUAL_HEIGHT):
+                    virtual_surface.blit(youwin_img, (0, 0))
+                else:
+                    yw_rect.center = (VIRTUAL_WIDTH//2, VIRTUAL_HEIGHT//2 - 40)
+                    virtual_surface.blit(youwin_img, yw_rect)
+
             main_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, VIRTUAL_HEIGHT - 150, 300, 60)
             draw_button(virtual_surface, main_btn, "Main Menu", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
 
