@@ -349,6 +349,11 @@ available_obstacles = list(obstacle_images.keys())
 selected_snack_key = available_snacks[0]
 selected_obstacle_key = available_obstacles[0]
 
+# NEW: Difficulty / Level menu
+DIFFICULTIES = ["Easy", "Normal", "Medium", "Hard"]
+DIFFICULTY_LIVES = {"Easy": 9, "Normal": 5, "Medium": 3, "Hard": 1}
+selected_difficulty = "Normal"  # default
+
 # helper to reset gameplay
 def reset_game():
     global makanans, B_makanans, score, makanan_timer, B_makanan_timer, lives, player_pos, achievement_timer, show_achievement, last_achievement_score, game_level, game_tempo, current_sky_img, player_speed, invincible, invincible_timer, golden_foods, shields
@@ -362,7 +367,10 @@ def reset_game():
     
     # Apply character stats
     stats = CHARACTER_STATS[selected_char_key]
+    # base lives from character (kept for fallback) then override with difficulty
     lives = stats["lives"]
+    # override start lives according to chosen difficulty
+    lives = DIFFICULTY_LIVES.get(selected_difficulty, lives)
     player_speed = stats["speed"]
 
     player_pos = [VIRTUAL_WIDTH//2, ground_rect.top - PLAYER_H]
@@ -491,7 +499,8 @@ while running:
                 start_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 280, 300, 60)
                 char_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 360, 300, 60)
                 asset_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 440, 300, 60)
-                quit_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 520, 300, 60)
+                level_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 520, 300, 60)
+                quit_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 600, 300, 60)
                 if start_btn.collidepoint(vx, vy):
                     reset_game()
                     if bgm:
@@ -502,6 +511,8 @@ while running:
                     state = "character"
                 elif asset_btn.collidepoint(vx, vy):
                     state = "assets"
+                elif level_btn.collidepoint(vx, vy):
+                    state = "level"
                 elif quit_btn.collidepoint(vx, vy):
                     running = False
 
@@ -569,6 +580,28 @@ while running:
                 elif quit_btn.collidepoint(vx, vy):
                     running = False
             
+            elif state == "level":
+                # level option buttons (same layout as draw)
+                opt_w, opt_h = 360, 70
+                start_y = 200
+                gap = 90
+                clicked_any = False
+                for i, d in enumerate(DIFFICULTIES):
+                    r = pygame.Rect(VIRTUAL_WIDTH//2 - opt_w//2, start_y + i*gap, opt_w, opt_h)
+                    if r.collidepoint(vx, vy):
+                        # choose difficulty and go back to main menu
+                        selected_difficulty = d
+                        state = "main"
+                        clicked_any = True
+                        break
+                if clicked_any:
+                    # nothing else to handle
+                    pass
+                else:
+                    back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, start_y + len(DIFFICULTIES)*gap + 10, 200, 50)
+                    if back_btn.collidepoint(vx, vy):
+                        state = "main"
+
             elif state == "gameover" or state == "victory":
                 main_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, VIRTUAL_HEIGHT - 150, 300, 60)
                 if main_btn.collidepoint(vx, vy):
@@ -819,14 +852,18 @@ while running:
             title_img = render_pixel_text("Snack Scramble", color=(229,115,115), base_size=26, pixel_scale=5, bold=True)
             title_rect = title_img.get_rect(center=(VIRTUAL_WIDTH//2, 150))
             virtual_surface.blit(title_img, title_rect)
-            # buttons
+            # buttons (add Level button)
             start_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 280, 300, 60)
             char_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 360, 300, 60)
             asset_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 440, 300, 60)
-            quit_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 520, 300, 60)
+            level_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 520, 300, 60)
+            quit_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 600, 300, 60)
             draw_button(virtual_surface, start_btn, "Start Game", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
             draw_button(virtual_surface, char_btn, "Character Select", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
             draw_button(virtual_surface, asset_btn, "Asset Select", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
+            # show current selected difficulty on the Level button
+            level_label = f"Level: {selected_difficulty}"
+            draw_button(virtual_surface, level_btn, level_label, FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
             draw_button(virtual_surface, quit_btn, "Quit", FONT, bg=COLOR_ACCENT_DARK, fg=COLOR_TEXT)
 
         elif state == "character":
@@ -850,7 +887,7 @@ while running:
                 # highlight selected
                 if i == selected_char_index:
                     pygame.draw.rect(virtual_surface, COLOR_ACCENT_DARK, r, 4, border_radius=8)
-            # back button
+            # Back button
             back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, 520, 200, 50)
             draw_button(virtual_surface, back_btn, "Back", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
 
@@ -905,20 +942,59 @@ while running:
             draw_button(virtual_surface, mainmenu_btn, "Main Menu", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
             draw_button(virtual_surface, quit_btn, "Quit", FONT, bg=COLOR_ACCENT_DARK, fg=COLOR_TEXT)
 
+        elif state == "level":
+            # Level selection screen
+            title_img = render_pixel_text("Select Level", color=(229,115,115), base_size=24, pixel_scale=5, bold=True)
+            title_rect = title_img.get_rect(center=(VIRTUAL_WIDTH//2, 120))
+            virtual_surface.blit(title_img, title_rect)
+
+            # Create buttons for each difficulty option
+            opt_w, opt_h = 360, 70
+            start_y = 200
+            gap = 90
+            option_rects = {}
+            for i, d in enumerate(DIFFICULTIES):
+                r = pygame.Rect(VIRTUAL_WIDTH//2 - opt_w//2, start_y + i*gap, opt_w, opt_h)
+                option_rects[d] = r
+                draw_button(virtual_surface, r, d, FONT, bg=COLOR_ACCENT if d != selected_difficulty else COLOR_ACCENT_DARK, fg=COLOR_TEXT)
+                # mark chosen difficulty with a thin highlight border
+                if d == selected_difficulty:
+                    pygame.draw.rect(virtual_surface, (30,20,10), r, 4, border_radius=8)
+
+            # Back button
+            back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, start_y + len(DIFFICULTIES)*gap + 10, 200, 50)
+            draw_button(virtual_surface, back_btn, "Back", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
+
         elif state == "gameover":
-            # draw gameover background (or fallback color)
-            if gameover_bg_img:
+            # If the gameover background image is fullscreen and already contains the "Game Over"
+            # artwork, don't draw an extra title on top — just blit the background and the button.
+            if gameover_bg_img and gameover_bg_img.get_size() == (VIRTUAL_WIDTH, VIRTUAL_HEIGHT):
                 virtual_surface.blit(gameover_bg_img, (0, 0))
             else:
-                virtual_surface.fill((40, 10, 10))
-            # draw a clear "Game Over" title with panel for contrast
-            title_img = render_pixel_text("Game Over", color=COLOR_TITLE, outline_color=(20,12,6), outline_thickness=3, base_size=20, pixel_scale=5, bold=True)
-            title_rect = title_img.get_rect(center=(VIRTUAL_WIDTH//2, 200))
-            panel_w, panel_h = title_rect.width + 40, title_rect.height + 20
-            panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
-            panel.fill((0,0,0,170))  # semi-transparent dark panel behind title
-            virtual_surface.blit(panel, (title_rect.x - 20, title_rect.y - 10))
-            virtual_surface.blit(title_img, title_rect)
+                # draw fallback background (or smaller bg image) and add a clear "Game Over" title
+                if gameover_bg_img:
+                    # if bg exists but is not fullscreen, center/scale it as decorative layer
+                    bg_rect = gameover_bg_img.get_rect(center=(VIRTUAL_WIDTH//2, VIRTUAL_HEIGHT//2))
+                    virtual_surface.blit(gameover_bg_img, bg_rect)
+                else:
+                    virtual_surface.fill((40, 10, 10))
+
+                # draw a clear "Game Over" title with panel for contrast
+                title_img = render_pixel_text(
+                    "Game Over",
+                    color=COLOR_TITLE,
+                    outline_color=(20,12,6),
+                    outline_thickness=3,
+                    base_size=20,
+                    pixel_scale=5,
+                    bold=True,
+                )
+                title_rect = title_img.get_rect(center=(VIRTUAL_WIDTH//2, 200))
+                panel_w, panel_h = title_rect.width + 40, title_rect.height + 20
+                panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+                panel.fill((0,0,0,170))  # semi-transparent dark panel behind title
+                virtual_surface.blit(panel, (title_rect.x - 20, title_rect.y - 10))
+                virtual_surface.blit(title_img, title_rect)
 
             main_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, VIRTUAL_HEIGHT - 150, 300, 60)
             draw_button(virtual_surface, main_btn, "Main Menu", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
