@@ -27,6 +27,9 @@ PLAYER_ASSETS = {
     "hamster": os.path.join(ASSET_PATH, "images" , "hamster.png"),
 }
 GROUND_TILE = os.path.join(ASSET_PATH, "images" ,"ground.png")
+# tambahkan path untuk ground level 2 & 3
+GROUND_TILE_2 = os.path.join(ASSET_PATH, "images", "ground2.png")
+GROUND_TILE_3 = os.path.join(ASSET_PATH, "images", "ground3.png")
 SNACK_ASSETS = {
     "fish": os.path.join(ASSET_PATH, "images", "ikan.png"),
     "cheese": os.path.join(ASSET_PATH, "images", "keju.png"),
@@ -113,6 +116,12 @@ for name, path in PLAYER_ASSETS.items():
     player_images[name] = load_image(path, (PLAYER_W, PLAYER_H), fallback_color=(180,180,180))
 
 ground_tile_img = load_image(GROUND_TILE, (1080, GROUND_HEIGHT), fallback_color=(100,50,20))
+# load additional ground variants
+ground_tile_img_2 = load_image(GROUND_TILE_2, (1080, GROUND_HEIGHT), fallback_color=(110,60,30))
+ground_tile_img_3 = load_image(GROUND_TILE_3, (1080, GROUND_HEIGHT), fallback_color=(80,40,20))
+
+# current ground used for drawing (will change with score)
+current_ground_img = ground_tile_img
 
 snack_images = {}
 for name, path in SNACK_ASSETS.items():
@@ -623,6 +632,8 @@ while running:
             game_level = 2
             game_tempo = 1.5
             current_sky_img = sky_img_3
+            # gunakan ground3 mulai score 100
+            current_ground_img = ground_tile_img_3
             if sfx_levelup: sfx_levelup.play()
             if os.path.exists(BGM_FILE_3):
                 try:
@@ -634,6 +645,8 @@ while running:
             game_level = 1
             game_tempo = 1.2
             current_sky_img = sky_img_2
+            # gunakan ground2 mulai score 50
+            current_ground_img = ground_tile_img_2
             if sfx_levelup: sfx_levelup.play()
             if os.path.exists(BGM_FILE_2):
                 try:
@@ -645,8 +658,11 @@ while running:
         virtual_surface.blit(current_sky_img, (0, 0))
 
         # draw ground tiles across width
-        for x in range(0, VIRTUAL_WIDTH, ground_tile_img.get_width()):
-            virtual_surface.blit(ground_tile_img, (x, VIRTUAL_HEIGHT - GROUND_HEIGHT))
+        # for x in range(0, VIRTUAL_WIDTH, ground_tile_img.get_width()):
+        #    virtual_surface.blit(ground_tile_img, (x, VIRTUAL_HEIGHT - GROUND_HEIGHT))
+        # gunakan current_ground_img (ground default / ground2 / ground3)
+        for x in range(0, VIRTUAL_WIDTH, current_ground_img.get_width()):
+            virtual_surface.blit(current_ground_img, (x, VIRTUAL_HEIGHT - GROUND_HEIGHT))
 
         # spawn logic
         jumlah_makanan = 1 + (score // 5) # Reduced
