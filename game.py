@@ -7,7 +7,7 @@ import os
 pygame.init()
 pygame.mixer.init()
 
-# -------- CONFIG: Virtual resolution (game world) --------
+# -------- CONFIG: Virtual resolution (game world) -------
 VIRTUAL_WIDTH, VIRTUAL_HEIGHT = 1280, 720  # design base (16:9)
 
 # Window initial size (starts at virtual res; user can resize)
