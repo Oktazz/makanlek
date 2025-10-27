@@ -3,9 +3,48 @@ import pygame
 from pygame.locals import *
 from random import randint, choice
 import os
+import json
 
 pygame.init()
-pygame.mixer.init()
+try:
+    pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+    print("Mixer initialized successfully")
+except Exception as e:
+    print("Error initializing mixer:", e)
+
+# -------- Asset file paths (put your images/sounds here) --------
+ASSET_PATH = "resource"
+
+# File untuk menyimpan progress
+SAVE_FILE = os.path.join(ASSET_PATH, "save_data.json")
+
+# Default save data
+default_save_data = {
+    "unlocked_characters": ["cat"],  # Karakter yang sudah terbuka
+    "highest_score": 0
+}
+
+def load_save_data():
+    """Load save data dari file JSON"""
+    try:
+        if os.path.exists(SAVE_FILE):
+            with open(SAVE_FILE, 'r') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Error loading save data: {e}")
+    return default_save_data.copy()
+
+def save_progress(data):
+    """Simpan progress ke file JSON"""
+    try:
+        os.makedirs(os.path.dirname(SAVE_FILE), exist_ok=True)
+        with open(SAVE_FILE, 'w') as f:
+            json.dump(data, f)
+    except Exception as e:
+        print(f"Error saving progress: {e}")
+
+# Load save data saat startup
+save_data = load_save_data()
 
 # -------- CONFIG: Virtual resolution (game world) -------
 VIRTUAL_WIDTH, VIRTUAL_HEIGHT = 1280, 720  # design base (16:9)
@@ -18,8 +57,34 @@ pygame.display.set_caption("Snack Scramble")
 # Virtual surface - draw game here, then scale to screen
 virtual_surface = pygame.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
 
-# -------- Asset file paths (put your images/sounds here) --------
-ASSET_PATH = "resource"
+# Default save data
+default_save_data = {
+    "unlocked_characters": ["cat"],  # Karakter yang sudah terbuka
+    "highest_score": 0
+}
+
+def load_save_data():
+    """Load save data dari file JSON"""
+    try:
+        if os.path.exists(SAVE_FILE):
+            with open(SAVE_FILE, 'r') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Error loading save data: {e}")
+    return default_save_data.copy()
+
+def save_progress(data):
+    """Simpan progress ke file JSON"""
+    try:
+        os.makedirs(os.path.dirname(SAVE_FILE), exist_ok=True)
+        with open(SAVE_FILE, 'w') as f:
+            json.dump(data, f)
+    except Exception as e:
+        print(f"Error saving progress: {e}")
+
+# Load save data saat startup
+save_data = load_save_data()
+
 PLAYER_ASSETS = {
     "cat": os.path.join(ASSET_PATH, "images", "kucing.png"),
     "dog": os.path.join(ASSET_PATH, "images", "anjing.png"),
@@ -45,14 +110,14 @@ SFX_STEP = os.path.join(ASSET_PATH, "sounds", "footstep.mp3")
 SFX_EAT = os.path.join(ASSET_PATH, "sounds", "eat.wav")
 SFX_HIT = os.path.join(ASSET_PATH, "sounds", "hit.mp3")
 SFX_GAMEOVER = os.path.join(ASSET_PATH, "sounds", "game_over.wav")
-SFX_VICTORY = os.path.join(ASSET_PATH, "sounds", "victory.mp3")
+SFX_VICTORY = os.path.join(ASSET_PATH, "sounds", "victory.wav")  # Changed to .wav
 HEART_ASSET = os.path.join(ASSET_PATH, "images", "love.png")
 BGM_FILE_2 = os.path.join(ASSET_PATH, "sounds", "backsound_fast.mp3")
 BGM_FILE_3 = os.path.join(ASSET_PATH, "sounds", "backsound_faster.mp3")
 SKY_IMG_2 = os.path.join(ASSET_PATH, "images", "sky_2.png")
 SKY_IMG_3 = os.path.join(ASSET_PATH, "images", "sky_3.png")
 SFX_POWERUP = os.path.join(ASSET_PATH, "sounds", "power.wav")
-SFX_LEVELUP = os.path.join(ASSET_PATH, "sounds" "levelup.wav")
+SFX_LEVELUP = os.path.join(ASSET_PATH, "sounds", "levelup.wav")  # Fixed missing comma
 FRONT_OVERLAY = os.path.join(ASSET_PATH, "images", "bgtampilan.png")  # tambahkan ini
 VICTORY_BG = os.path.join(ASSET_PATH, "images", "bg.win.png")     # <- new: victory background
 GAMEOVER_BG = os.path.join(ASSET_PATH, "images", "bg.lose.png")  # <- new: gameover background
@@ -80,7 +145,7 @@ STEP_SOUND_INTERVAL = 12         # frames between step sfx while walking
 CHARACTER_STATS = {
     "cat":     {"speed": 10, "lives": MAX_LIVES,   "points_per_snack": 1, "shield_duration": 5, "description": "Moves faster"},
     "dog":     {"speed": 8,  "lives": MAX_LIVES + 2, "points_per_snack": 1, "shield_duration": 5, "description": "Starts with more lives"},
-    "bunny":   {"speed": 8,  "lives": MAX_LIVES,   "points_per_snack": 2, "shield_duration": 5, "description": "Gets more points from snacks"},
+    "bunny":   {"speed": 8,  "lives": MAX_LIVES,   "points_per_snack": 2, "shield_duration": 5, "description": "Gets more points"},
     "hamster": {"speed": 7,  "lives": MAX_LIVES,   "points_per_snack": 1, "shield_duration": 8, "description": "Shields last longer"}
 }
 
@@ -103,9 +168,20 @@ def load_image(path, size=None, fallback_color=None):
 def load_sound(path):
     if os.path.exists(path):
         try:
-            return pygame.mixer.Sound(path)
-        except Exception:
-            pass
+            sound = pygame.mixer.Sound(path)
+            print(f"Successfully loaded sound: {path}")
+            return sound
+        except Exception as e:
+            print(f"Error loading sound {path}: {e}")
+            try:
+                # Try alternate loading method
+                sound = pygame.mixer.Sound(file=path)
+                print(f"Successfully loaded sound using alternate method: {path}")
+                return sound
+            except Exception as e:
+                print(f"Alternate loading also failed: {e}")
+    else:
+        print(f"Sound file not found: {path}")
     # fallback: create silent Sound by generating 1-silence (can't easily create programmatically in pygame),
     # so return None and caller must check
     return None
@@ -180,7 +256,23 @@ if sfx_step:
 sfx_eat = load_sound(SFX_EAT)
 sfx_hit = load_sound(SFX_HIT)
 sfx_gameover = load_sound(SFX_GAMEOVER)
+
+# Debug victory sound loading
+print("Victory sound path:", SFX_VICTORY)
+print("Victory sound file exists:", os.path.exists(SFX_VICTORY))
+try:
+    test_sound = pygame.mixer.Sound(SFX_VICTORY)
+    print("Victory sound loaded successfully in test")
+    test_sound.play()
+    test_sound.stop()
+except Exception as e:
+    print("Error testing victory sound:", e)
 sfx_victory = load_sound(SFX_VICTORY)
+if sfx_victory:
+    print("Victory sound loaded successfully")
+    sfx_victory.set_volume(0.8)  # Set appropriate volume for victory sound
+else:
+    print("Failed to load victory sound")
 sfx_powerup = load_sound(SFX_POWERUP)
 sfx_levelup = load_sound(SFX_LEVELUP)
 
@@ -204,6 +296,21 @@ game_level = 0
 game_tempo = 1.0
 current_sky_img = sky_img
 player_speed = CHARACTER_STATS["cat"]["speed"] # Default to cat
+points_per_snack = CHARACTER_STATS["cat"]["points_per_snack"]  # Default points multiplier
+
+def check_unlock_character():
+    """Check if new character should be unlocked based on score"""
+    global save_data
+    unlocked = save_data["unlocked_characters"]
+    if score >= 150:  # Victory condition
+        # Find next locked character to unlock
+        for char in ["cat", "dog", "bunny", "hamster"]:
+            if char not in unlocked:
+                unlocked.append(char)
+                save_data["unlocked_characters"] = unlocked
+                save_progress(save_data)
+                return True, char  # Return True and newly unlocked character
+    return False, None
 
 # player default
 selected_char_key = "cat"
@@ -365,7 +472,7 @@ selected_difficulty = "Normal"  # default
 
 # helper to reset gameplay
 def reset_game():
-    global makanans, B_makanans, score, makanan_timer, B_makanan_timer, lives, player_pos, achievement_timer, show_achievement, last_achievement_score, game_level, game_tempo, current_sky_img, player_speed, invincible, invincible_timer, golden_foods, shields
+    global makanans, B_makanans, score, makanan_timer, B_makanan_timer, lives, player_pos, achievement_timer, show_achievement, last_achievement_score, game_level, game_tempo, current_sky_img, player_speed, invincible, invincible_timer, golden_foods, shields, points_per_snack
     makanans = []
     B_makanans = []
     golden_foods = []
@@ -376,11 +483,12 @@ def reset_game():
     
     # Apply character stats
     stats = CHARACTER_STATS[selected_char_key]
-    # base lives from character (kept for fallback) then override with difficulty
-    lives = stats["lives"]
-    # override start lives according to chosen difficulty
-    lives = DIFFICULTY_LIVES.get(selected_difficulty, lives)
+    # Get base lives from character stats
+    base_lives = stats["lives"]
+    # Override with difficulty-based lives
+    lives = DIFFICULTY_LIVES.get(selected_difficulty, base_lives)
     player_speed = stats["speed"]
+    points_per_snack = stats["points_per_snack"]  # Points multiplier per snack
 
     player_pos = [VIRTUAL_WIDTH//2, ground_rect.top - PLAYER_H]
     achievement_timer = 0
@@ -537,16 +645,19 @@ while running:
                     rx = start_x + i*(thumb_w + gap)
                     r = pygame.Rect(rx, start_y, thumb_w, thumb_h)
                     if r.collidepoint(vx, vy):
-                        selected_char_index = i
-                        selected_char_key = available_chars[selected_char_index]
-                        # load chosen images
-                        player_idle_right = player_images[selected_char_key]
-                        player_idle_left = pygame.transform.flip(player_idle_right, True, False)
-                        player_walk_right = pygame.transform.scale(player_idle_right, (PLAYER_W, int(PLAYER_H*0.9)))
-                        player_walk_left = pygame.transform.flip(player_walk_right, True, False)
-                        walk_frames_r = [player_idle_right, player_walk_right]
-                        walk_frames_l = [player_idle_left, player_walk_left]
-                        player_image = player_idle_right
+                        char_key = available_chars[i]
+                        # Only allow selection if character is unlocked
+                        if char_key in save_data["unlocked_characters"]:
+                            selected_char_index = i
+                            selected_char_key = char_key
+                            # load chosen images
+                            player_idle_right = player_images[selected_char_key]
+                            player_idle_left = pygame.transform.flip(player_idle_right, True, False)
+                            player_walk_right = pygame.transform.scale(player_idle_right, (PLAYER_W, int(PLAYER_H*0.9)))
+                            player_walk_left = pygame.transform.flip(player_walk_right, True, False)
+                            walk_frames_r = [player_idle_right, player_walk_right]
+                            walk_frames_l = [player_idle_left, player_walk_left]
+                            player_image = player_idle_right
                 # Back button region
                 back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, 520, 200, 50)
                 if back_btn.collidepoint(vx, vy):
@@ -621,11 +732,21 @@ while running:
 
         # Level progression check
         if score >= 150 and game_level < 3:
+            print("Victory condition met!")
             state = "victory"
             if bgm:
-                pygame.mixer.music.pause()
+                print("Stopping background music")
+                pygame.mixer.music.stop()  # Stop completely instead of pause
             if sfx_victory:
-                sfx_victory.play()
+                print("Playing victory sound")
+                sfx_victory.set_volume(1.0)  # Set full volume for victory sound
+                try:
+                    sfx_victory.play()
+                    print("Victory sound played successfully")
+                except Exception as e:
+                    print("Error playing victory sound:", e)
+            else:
+                print("Victory sound not available")
             # Stop processing this frame as "playing"
             continue
         elif score >= 100 and game_level < 2:
@@ -709,7 +830,7 @@ while running:
             # collision with player rect
             player_rect = pygame.Rect(player_pos[0], player_pos[1], PLAYER_W, PLAYER_H)
             if player_rect.colliderect(makanan["rect"]):
-                score += 1
+                score += points_per_snack
                 if sfx_eat:
                     sfx_eat.play()
                 makanans.remove(makanan)
@@ -718,6 +839,13 @@ while running:
                     show_achievement = True
                     achievement_timer = current_time
                     last_achievement_score = score
+                # Check for character unlock
+                unlocked, new_char = check_unlock_character()
+                if unlocked and new_char:
+                    # Show special achievement for unlocking character
+                    show_achievement = True
+                    achievement_timer = current_time
+                    last_achievement_score = -1  # Special value to not conflict with score achievements
 
         for obst in B_makanans[:]:
             obst["rect"].top += obst["speed"]
@@ -760,8 +888,10 @@ while running:
             player_rect = pygame.Rect(player_pos[0], player_pos[1], PLAYER_W, PLAYER_H)
             if player_rect.colliderect(sh["rect"]):
                 invincible = True
-                invincible_timer = 5 * FPS  # 5 seconds of invincibility
-                sfx_powerup.play()
+                shield_duration = CHARACTER_STATS[selected_char_key]["shield_duration"]
+                invincible_timer = shield_duration * FPS  # Use character's shield duration
+                if sfx_powerup:
+                    sfx_powerup.play()
                 shields.remove(sh)
 
         if invincible:
@@ -895,13 +1025,53 @@ while running:
             for i, key in enumerate(available_chars):
                 rx = start_x + i*(thumb_w + gap)
                 r = pygame.Rect(rx, start_y, thumb_w, thumb_h)
-                pygame.draw.rect(virtual_surface, (255,255,255), r, border_radius=8)
-                # draw thumbnail scaled
+                
+                # Check if character is unlocked
+                is_unlocked = key in save_data["unlocked_characters"]
+                bg_color = (255,255,255) if is_unlocked else (128,128,128)
+                
+                pygame.draw.rect(virtual_surface, bg_color, r, border_radius=8)
+                # draw thumbnail scaled (grayed out if locked)
                 thumb_img = pygame.transform.smoothscale(player_images[key], (thumb_w-20, thumb_h-20))
+                if not is_unlocked:
+                    # Create gray version of thumbnail
+                    gray = pygame.Surface(thumb_img.get_size())
+                    gray.fill((128,128,128))
+                    thumb_img.blit(gray, (0,0), special_flags=pygame.BLEND_MULT)
+                
                 virtual_surface.blit(thumb_img, (rx+10, start_y+10))
                 draw_text(virtual_surface, key.capitalize(), (rx+10, start_y+thumb_h+8), FONT, COLOR_TEXT)
-                # highlight selected
-                if i == selected_char_index:
+                
+                # Show stats if unlocked
+                if is_unlocked:
+                    stats = CHARACTER_STATS[key]
+                    stat_y = start_y + thumb_h + 45 
+                    stat_text = [
+                        f"Speed: {stats['speed']}",
+                        f"Lives: {stats['lives']}",
+                        f"Points: x{stats['points_per_snack']}",
+                        f"Shield: {stats['shield_duration']}s"
+                    ]
+                    description = stats["description"]
+                    
+                    for j, text in enumerate(stat_text):
+                        draw_text(virtual_surface, text, (rx+5, stat_y + j*20), 
+                                pygame.font.SysFont("arial", 16), COLOR_TEXT)
+                    
+                    # Draw description (moved down by adding 10 to the offset)
+                    desc_y = stat_y + len(stat_text)*20 + 15  # Increased from 5 to 15
+                    desc_surf = pygame.font.SysFont("arial", 14).render(description, True, COLOR_TEXT)
+                    virtual_surface.blit(desc_surf, (rx+5, desc_y))
+                else:
+                    # Show "Locked" text and unlock condition
+                    lock_y = start_y + thumb_h + 40
+                    draw_text(virtual_surface, "Locked", (rx+40, lock_y), 
+                            pygame.font.SysFont("arial", 18), (200,0,0))
+                    draw_text(virtual_surface, "Win game to unlock", (rx+10, lock_y+25),
+                            pygame.font.SysFont("arial", 14), COLOR_TEXT)
+                
+                # highlight selected (only if unlocked)
+                if i == selected_char_index and is_unlocked:
                     pygame.draw.rect(virtual_surface, COLOR_ACCENT_DARK, r, 4, border_radius=8)
             # Back button
             back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, 520, 200, 50)
