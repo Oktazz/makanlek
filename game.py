@@ -12,7 +12,7 @@ try:
 except Exception as e:
     print("Error initializing mixer:", e)
 
-# -------- Asset file paths (put your images/sounds here) --------
+# -------- Path file aset (letakkan gambar/suara Anda di sini) --------
 ASSET_PATH = "resource"
 
 # File untuk menyimpan progress
@@ -49,12 +49,12 @@ save_data = load_save_data()
 # -------- CONFIG: Virtual resolution (game world) -------
 VIRTUAL_WIDTH, VIRTUAL_HEIGHT = 1280, 720  # design base (16:9)
 
-# Window initial size (starts at virtual res; user can resize)
+# Ukuran jendela awal (mulai dengan resolusi virtual; pengguna dapat mengubahnya)
 SCREEN_WIDTH, SCREEN_HEIGHT = VIRTUAL_WIDTH, VIRTUAL_HEIGHT
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption("Snack Scramble")
 
-# Virtual surface - draw game here, then scale to screen
+# Surface virtual - gambar game di sini, lalu skalakan ke layar
 virtual_surface = pygame.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
 
 # Default save data
@@ -110,38 +110,28 @@ SFX_STEP = os.path.join(ASSET_PATH, "sounds", "footstep.mp3")
 SFX_EAT = os.path.join(ASSET_PATH, "sounds", "eat.wav")
 SFX_HIT = os.path.join(ASSET_PATH, "sounds", "hit.mp3")
 SFX_GAMEOVER = os.path.join(ASSET_PATH, "sounds", "game_over.wav")
-SFX_VICTORY = os.path.join(ASSET_PATH, "sounds", "victory.wav")  # Changed to .wav
+SFX_VICTORY = os.path.join(ASSET_PATH, "sounds", "victory.wav") 
 HEART_ASSET = os.path.join(ASSET_PATH, "images", "love.png")
 BGM_FILE_2 = os.path.join(ASSET_PATH, "sounds", "backsound_fast.mp3")
 BGM_FILE_3 = os.path.join(ASSET_PATH, "sounds", "backsound_faster.mp3")
 SKY_IMG_2 = os.path.join(ASSET_PATH, "images", "sky_2.png")
 SKY_IMG_3 = os.path.join(ASSET_PATH, "images", "sky_3.png")
 SFX_POWERUP = os.path.join(ASSET_PATH, "sounds", "power.wav")
-SFX_LEVELUP = os.path.join(ASSET_PATH, "sounds", "levelup.wav")  # Fixed missing comma
-FRONT_OVERLAY = os.path.join(ASSET_PATH, "images", "bgtampilan.png")  # tambahkan ini
-VICTORY_BG = os.path.join(ASSET_PATH, "images", "bg.win.png")     # <- new: victory background
-GAMEOVER_BG = os.path.join(ASSET_PATH, "images", "bg.lose.png")  # <- new: gameover background
+SFX_LEVELUP = os.path.join(ASSET_PATH, "sounds", "levelup.wav")  
+FRONT_OVERLAY = os.path.join(ASSET_PATH, "images", "bgtampilan.png")  
+VICTORY_BG = os.path.join(ASSET_PATH, "images", "bg.win.png")     
+GAMEOVER_BG = os.path.join(ASSET_PATH, "images", "bg.lose.png")  
 
-
-# -------- Recommended asset sizes (in pixels, relative to VIRTUAL) --------
-# - player: 80x80 (good default). For HD art you can use 160x160 and scale down.
-# - ground tile: width 128, height same as ground_height (see below), recommended 128x100
-# - snack: 60x60
-# - obstacle: 60x60
-# - menu thumbnails: 120x120
-#
-# The code will scale loaded images to these sizes automatically.
-
-# -------- Game settings --------
+# -------- Pengaturan permainan --------
 FPS = 60
-GROUND_HEIGHT = 120               # height of ground in virtual coords
+GROUND_HEIGHT = 120               # tinggi tanah dalam koordinat virtual
 PLAYER_W, PLAYER_H = 80, 80      # default player sprite size
 SNACK_W, SNACK_H = 60, 60
 OBST_W, OBST_H = 60, 60
 MAX_LIVES = 9
 STEP_SOUND_INTERVAL = 12         # frames between step sfx while walking
 
-# Character skills
+# Keterampilan karakter
 CHARACTER_STATS = {
     "cat":     {"speed": 10, "lives": MAX_LIVES,   "points_per_snack": 1, "shield_duration": 5, "description": "Moves faster"},
     "dog":     {"speed": 8,  "lives": MAX_LIVES + 2, "points_per_snack": 1, "shield_duration": 5, "description": "Starts with more lives"},
@@ -149,7 +139,7 @@ CHARACTER_STATS = {
     "hamster": {"speed": 7,  "lives": MAX_LIVES,   "points_per_snack": 1, "shield_duration": 8, "description": "Shields last longer"}
 }
 
-# -------- Utilities: safe image/sound loaders with fallback --------
+# -------- Utilitas: pemuat gambar/suara yang aman dengan fallback --------
 def load_image(path, size=None, fallback_color=None):
     if os.path.exists(path):
         try:
@@ -159,7 +149,7 @@ def load_image(path, size=None, fallback_color=None):
             return img
         except Exception:
             pass
-    # fallback: colored surface
+    # fallback: permukaan berwarna
     surf = pygame.Surface(size if size else (32,32), pygame.SRCALPHA)
     color = fallback_color if fallback_color else (200,200,200)
     surf.fill(color)
@@ -182,11 +172,11 @@ def load_sound(path):
                 print(f"Alternate loading also failed: {e}")
     else:
         print(f"Sound file not found: {path}")
-    # fallback: create silent Sound by generating 1-silence (can't easily create programmatically in pygame),
+    # fallback: buat Suara senyap by generating 1-silence (can't easily create programmatically in pygame),
     # so return None and caller must check
     return None
 
-# -------- Load default assets (with recommended sizes) --------
+# -------- Muat aset default (with recommended sizes) --------
 player_images = {}
 for name, path in PLAYER_ASSETS.items():
     player_images[name] = load_image(path, (PLAYER_W, PLAYER_H), fallback_color=(180,180,180))
@@ -210,7 +200,7 @@ for name, path in OBSTACLE_ASSETS.items():
 heart_img = load_image(HEART_ASSET, (30, 30), fallback_color=(255,0,0))
 sky_img = load_image(os.path.join(ASSET_PATH, "images", "sky.png"), (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
 
-# Level-specific assets
+# Aset khusus level
 sky_img_2 = load_image(SKY_IMG_2, (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
 if not os.path.exists(SKY_IMG_2): # If file doesn't exist, create tinted version
     sky_img_2 = sky_img.copy()
@@ -243,12 +233,12 @@ golden_food_img = load_image(os.path.join(ASSET_PATH, "images", "apple.png"), (S
 shield_img = load_image(os.path.join(ASSET_PATH, "images", "perisai.png"), (SNACK_W, SNACK_H))
 youwin_img = load_image(os.path.join(ASSET_PATH, "images", "bg.win.png"), (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
 
-# load victory background (falls back to solid/dark surface if not found)
+# muat latar kemenangan (falls back to solid/dark surface if not found)
 victory_bg_img = load_image(VICTORY_BG, (VIRTUAL_WIDTH, VIRTUAL_HEIGHT), fallback_color=(30, 30, 60))
-# load gameover background (falls back to dark/red surface if not found)
+# muat latar gameover (falls back to dark/red surface if not found)
 gameover_bg_img = load_image(GAMEOVER_BG, (VIRTUAL_WIDTH, VIRTUAL_HEIGHT), fallback_color=(40, 10, 10))
 
-# sounds
+# suara
 bgm = BGM_FILE if os.path.exists(BGM_FILE) else None
 sfx_step = load_sound(SFX_STEP)
 if sfx_step:
@@ -257,7 +247,7 @@ sfx_eat = load_sound(SFX_EAT)
 sfx_hit = load_sound(SFX_HIT)
 sfx_gameover = load_sound(SFX_GAMEOVER)
 
-# Debug victory sound loading
+# Debug pemuatan suara kemenangan loading
 print("Victory sound path:", SFX_VICTORY)
 print("Victory sound file exists:", os.path.exists(SFX_VICTORY))
 try:
@@ -276,7 +266,7 @@ else:
 sfx_powerup = load_sound(SFX_POWERUP)
 sfx_levelup = load_sound(SFX_LEVELUP)
 
-# play bgm loop when menu starts (we will manage play/pause)
+# mainkan loop bgm saat menu dimulai (we will manage play/pause)
 if bgm:
     try:
         pygame.mixer.music.load(bgm)
@@ -285,18 +275,20 @@ if bgm:
     except Exception:
         pass
 
-# -------- Game state variables --------
+# -------- Variabel state permainan --------
 clock = pygame.time.Clock()
 running = True
 fullscreen = False
 
-# Gameplay variables
+# Variabel gameplay
 ground_rect = pygame.Rect(0, VIRTUAL_HEIGHT - GROUND_HEIGHT, VIRTUAL_WIDTH, GROUND_HEIGHT)
 game_level = 0
 game_tempo = 1.0
 current_sky_img = sky_img
 player_speed = CHARACTER_STATS["cat"]["speed"] # Default to cat
 points_per_snack = CHARACTER_STATS["cat"]["points_per_snack"]  # Default points multiplier
+difficulty_speed_multiplier = 1.0  # Multiplier untuk kecepatan item berdasarkan difficulty
+difficulty_spawn_multiplier = 1.0  # Multiplier untuk spawn rate berdasarkan difficulty
 
 def check_unlock_character():
     """Check if new character should be unlocked based on score"""
@@ -312,11 +304,11 @@ def check_unlock_character():
                 return True, char  # Return True and newly unlocked character
     return False, None
 
-# player default
+# default pemain
 selected_char_key = "cat"
 player_idle_right = player_images[selected_char_key]
 player_idle_left = pygame.transform.flip(player_idle_right, True, False)
-# simple walk frame: slightly squashed for subtle movement
+# frame berjalan sederhana: slightly squashed for subtle movement
 player_walk_right = pygame.transform.scale(player_idle_right, (PLAYER_W, int(PLAYER_H*0.9)))
 player_walk_left = pygame.transform.flip(player_walk_right, True, False)
 
@@ -327,10 +319,10 @@ facing_right = True
 is_walking = False
 player_pos = [VIRTUAL_WIDTH//2, ground_rect.top - PLAYER_H]
 
-# step sound timer
+# penghitung waktu suara langkah
 step_timer = 0
 
-# Spawned items
+# Item yang di-spawn
 makanans = []
 B_makanans = []
 makanan_timer = 0
@@ -342,25 +334,25 @@ invincible_timer = 0
 golden_food_timer = 0
 shields_timer = 0
 
-# lives
+# nyawa
 lives = MAX_LIVES
 
-# Achievement variables
+# Variabel pencapaian
 achievement_timer = 0
 show_achievement = False
 last_achievement_score = 0
 
-# --- UI Theme Colors ---
+# --- Warna Tema UI ---
 COLOR_BG = (252, 242, 244) # Light pink
-# ubah tombol jadi kuning/keemasan
+# ubah tombol jadi kuning/keemasan/keemasan
 COLOR_ACCENT = (255, 223, 0)       # bright gold
 COLOR_ACCENT_DARK = (212, 175, 55) # darker gold (border/highlight)
 COLOR_TEXT = (94, 74, 74) # Dark brown
 COLOR_TITLE = (229, 115, 115) # Title pink
 
-# --- UI Fonts ---
+# --- Font UI ---
 try:
-    # Try to use a cuter font if available
+    # Coba gunakan font yang lebih lucu if available
     TITLE_FONT_NAME = "comicsansms"
     pygame.font.SysFont(TITLE_FONT_NAME, 20) # test if font exists
 except:
@@ -370,7 +362,7 @@ FONT = pygame.font.SysFont("arial", 32)
 ACHIEVEMENT_FONT = pygame.font.SysFont("arial", 48, bold=True)
 TITLE_FONT = pygame.font.SysFont(TITLE_FONT_NAME, 80, bold=True)
 
-# try load a local pixel font (put a .ttf in resource/fonts/pixel.ttf for best results)
+# coba muat font pixel lokal (put a .ttf in resource/fonts/pixel.ttf for best results)
 PIXEL_FONT_PATH = os.path.join(ASSET_PATH, "fonts", "pixel.ttf")
 if os.path.exists(PIXEL_FONT_PATH):
     try:
@@ -430,7 +422,7 @@ def render_pixel_text(text, color=(229,115,115), outline_color=(153, 102, 51), o
     outline_surf.blit(colored, (ot, ot))
     return outline_surf
 
-# NEW helper: render label pixel-art yang menyesuaikan skala agar muat di tombol
+# BARU helper: render label pixel-art yang menyesuaikan skala agar muat di tombol
 def render_pixel_label_fit(text, fg_color, outline_color, max_w, max_h, base_size=10, bold=False):
     """
     Render a pixel label that fits inside max_w x max_h by choosing an integer scale factor.
@@ -452,27 +444,44 @@ def render_pixel_label_fit(text, fg_color, outline_color, max_w, max_h, base_siz
     # produce final pixel text with integer scale
     return render_pixel_text(text, color=fg_color, outline_color=outline_color, outline_thickness=1, base_size=base_size, pixel_scale=scale, bold=bold)
 
-# menu state: "main", "character", "assets", "playing", "pause", "gameover", "victory"
+# state menu: "main", "character", "assets", "playing", "pause", "gameover", "victory"
 state = "main"
 
-# For menu selections
+# Untuk pemilihan menu
 available_chars = list(player_images.keys())
 selected_char_index = available_chars.index(selected_char_key)
 
-# selected assets
+# aset yang dipilih
 available_snacks = list(snack_images.keys())
 available_obstacles = list(obstacle_images.keys())
 selected_snack_key = available_snacks[0]
 selected_obstacle_key = available_obstacles[0]
 
-# NEW: Difficulty / Level menu
+# BARU: Menu Difficulty / Level
 DIFFICULTIES = ["Easy", "Normal", "Medium", "Hard"]
 DIFFICULTY_LIVES = {"Easy": 9, "Normal": 5, "Medium": 3, "Hard": 1}
-selected_difficulty = "Normal"  # default
+selected_difficulty = "Normal"  # Default difficulty
 
-# helper to reset gameplay
+# Kecepatan jatuh makanan dan obstacle berdasarkan difficulty berdasarkan difficulty
+# Format: base_speed multiplier (semakin tinggi semakin cepat) (semakin tinggi semakin cepat)
+DIFFICULTY_SPEED = {
+    "Easy": 0.6,      # Sangat pelan
+    "Normal": 0.9,    # Pelan
+    "Medium": 1.2,    # Cepat
+    "Hard": 1.5       # Sangat cepat
+}
+
+# Pengganda spawn rate (semakin tinggi semakin sering spawn) (semakin tinggi semakin sering spawn)
+DIFFICULTY_SPAWN_RATE = {
+    "Easy": 0.8,      # Spawn lebih jarang
+    "Normal": 1.0,    # Spawn normal
+    "Medium": 1.2,    # Spawn lebih sering
+    "Hard": 1.5       # Spawn sangat sering
+}
+
+# helper untuk mereset gameplay
 def reset_game():
-    global makanans, B_makanans, score, makanan_timer, B_makanan_timer, lives, player_pos, achievement_timer, show_achievement, last_achievement_score, game_level, game_tempo, current_sky_img, player_speed, invincible, invincible_timer, golden_foods, shields, points_per_snack
+    global makanans, B_makanans, score, makanan_timer, B_makanan_timer, lives, player_pos, achievement_timer, show_achievement, last_achievement_score, game_level, game_tempo, current_sky_img, player_speed, invincible, invincible_timer, golden_foods, shields, points_per_snack, difficulty_speed_multiplier, difficulty_spawn_multiplier
     makanans = []
     B_makanans = []
     golden_foods = []
@@ -481,28 +490,34 @@ def reset_game():
     makanan_timer = 0
     B_makanan_timer = 0
     
-    # Apply character stats
+    # Apply difficulty multipliers
+    difficulty_speed_multiplier = DIFFICULTY_SPEED.get(selected_difficulty, 1.0)
+    difficulty_spawn_multiplier = DIFFICULTY_SPAWN_RATE.get(selected_difficulty, 1.0)
+    print(f"Starting game on {selected_difficulty} difficulty")
+    print(f"Speed multiplier: {difficulty_speed_multiplier}x, Spawn multiplier: {difficulty_spawn_multiplier}x")
+    
+    # Terapkan stats karakter
     stats = CHARACTER_STATS[selected_char_key]
-    # Get base lives from character stats
+    # Dapatkan nyawa dasar dari stats karakter from character stats
     base_lives = stats["lives"]
-    # Override with difficulty-based lives
+    # Ganti dengan nyawa berbasis kesulitan
     lives = DIFFICULTY_LIVES.get(selected_difficulty, base_lives)
     player_speed = stats["speed"]
-    points_per_snack = stats["points_per_snack"]  # Points multiplier per snack
+    points_per_snack = stats["points_per_snack"]  # Pengganda poin per makanan
 
     player_pos = [VIRTUAL_WIDTH//2, ground_rect.top - PLAYER_H]
     achievement_timer = 0
     show_achievement = False
     last_achievement_score = 0
     
-    # Reset level and tempo
+    # Reset level dan tempo
     game_level = 0
     game_tempo = 1.0
     current_sky_img = sky_img
     invincible = False
     invincible_timer = 0
 
-    # Reset BGM to default
+    # Reset BGM ke default
     if bgm:
         try:
             pygame.mixer.music.load(bgm)
@@ -511,13 +526,13 @@ def reset_game():
         except Exception:
             pass
 
-# -------- UI helpers --------
+# -------- Helper UI --------
 def draw_text(surface, text, pos, font=FONT, color=(255,255,255), outline_color=None, outline_width=1):
     x, y = pos
-    # 1. render the outline
+    # 1. render garis besar
     if outline_color:
         outline_img = font.render(text, True, outline_color)
-        # blit in 8 directions
+        # blit dalam 8 arah
         surface.blit(outline_img, (x-outline_width, y-outline_width))
         surface.blit(outline_img, (x,               y-outline_width))
         surface.blit(outline_img, (x+outline_width, y-outline_width))
@@ -527,7 +542,7 @@ def draw_text(surface, text, pos, font=FONT, color=(255,255,255), outline_color=
         surface.blit(outline_img, (x,               y+outline_width))
         surface.blit(outline_img, (x+outline_width, y+outline_width))
     
-    # 2. render the main text on top
+    # 2. render teks utama di atas
     img = font.render(text, True, color)
     surface.blit(img, pos)
 
@@ -540,32 +555,32 @@ def draw_button(surface, rect, text, font=FONT, bg=None, fg=COLOR_TEXT):
     if bg is None:
         bg = COLOR_ACCENT
 
-    # button background
+    # latar belakang tombol
     pygame.draw.rect(surface, bg, rect, border_radius=8)
-    # subtle 1px inner border for depth (avoid thick smooth lines)
+    # subtle border batin 1px untuk kedalaman for depth (avoid thick smooth lines)
     inner = rect.inflate(-6, -6)
     pygame.draw.rect(surface, COLOR_ACCENT_DARK, inner, 1, border_radius=6)
 
-    # render pixel label that fits inside rect
+    # render label pixel yang sesuai di dalam rect inside rect
     label_surf = render_pixel_label_fit(text, fg_color=fg, outline_color=(94, 74, 74), max_w=rect.width-12, max_h=rect.height-8, base_size=10, bold=True)
     lx = rect.x + (rect.width - label_surf.get_width()) // 2
     ly = rect.y + (rect.height - label_surf.get_height()) // 2
     surface.blit(label_surf, (lx, ly))
 
-# -------- Main loop --------
+# -------- Loop utama --------
 frame_count = 0
 while running:
     dt = clock.tick(FPS)
     frame_count += 1
     current_time = pygame.time.get_ticks()
 
-    # handle events
+    # tangani event
     for event in pygame.event.get():
         if event.type == QUIT:
             running = False
 
         if event.type == KEYDOWN:
-            if event.key == K_F11:  # fullscreen toggle
+            if event.key == K_F11:  # toggle fullscreen
                 fullscreen = not fullscreen
                 if fullscreen:
                     info = pygame.display.Info()
@@ -574,14 +589,14 @@ while running:
                 else:
                     SCREEN_WIDTH, SCREEN_HEIGHT = VIRTUAL_WIDTH, VIRTUAL_HEIGHT
                     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
-            # universal ESC behavior
+            # perilaku ESC universal
             if event.key == K_ESCAPE:
                 if state == "playing":
                     state = "pause"
                 elif state == "pause":
                     state = "playing"
                 elif state in ("main", "character", "assets", "gameover"):
-                    # in menus ESC -> quit
+                    # di menu ESC -> keluar
                     running = False
 
         if event.type == VIDEORESIZE and not fullscreen:
@@ -590,8 +605,8 @@ while running:
 
         if event.type == MOUSEBUTTONDOWN and event.button == 1:
             mx, my = event.pos
-            # convert mouse to virtual coords (inverse of final scale)
-            # compute scale used currently
+            # konversi mouse ke koordinat virtual (inverse of final scale)
+            # hitung skala yang digunakan saat ini
             scale_w = SCREEN_WIDTH / VIRTUAL_WIDTH
             scale_h = SCREEN_HEIGHT / VIRTUAL_HEIGHT
             scale = min(scale_w, scale_h)
@@ -600,19 +615,19 @@ while running:
             x_pos = (SCREEN_WIDTH - new_w) // 2
             y_pos = (SCREEN_HEIGHT - new_h) // 2
             if not (x_pos <= mx <= x_pos + new_w and y_pos <= my <= y_pos + new_h):
-                # clicks outside the game area don't count
+                # klik di luar area game tidak dihitung don't count
                 continue
-            # map to virtual coords
+            # map ke koordinat virtual
             vx = int((mx - x_pos) / scale)
             vy = int((my - y_pos) / scale)
 
-            # handle clicks in menu screens
+            # tangani klik di layar menu
             if state == "playing":
                 pause_btn_rect = pygame.Rect(20, 60, 100, 40)
                 if pause_btn_rect.collidepoint(vx, vy):
                     state = "pause"
             if state == "main":
-                # simple button layout positions (virtual coords)
+                # posisi tata letak tombol sederhana (virtual coords)
                 start_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 280, 300, 60)
                 char_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 360, 300, 60)
                 asset_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 440, 300, 60)
@@ -621,7 +636,7 @@ while running:
                 if start_btn.collidepoint(vx, vy):
                     reset_game()
                     if bgm:
-                        # unpause if it was paused (e.g. after gameover)
+                        # batalkan jeda jika dijeda (e.g. after gameover)
                         pygame.mixer.music.unpause()
                     state = "playing"
                 elif char_btn.collidepoint(vx, vy):
@@ -634,8 +649,8 @@ while running:
                     running = False
 
             elif state == "character":
-                # show thumbnails; allow clicking thumbnails to select char
-                # thumbnails area start
+                # tampilkan thumbnail; allow clicking thumbnails to select char
+                # area thumbnail mulai
                 start_x = 180
                 start_y = 220
                 thumb_w = 140
@@ -658,16 +673,16 @@ while running:
                             walk_frames_r = [player_idle_right, player_walk_right]
                             walk_frames_l = [player_idle_left, player_walk_left]
                             player_image = player_idle_right
-                # Back button region
+                # Tombol Kembali region
                 back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, 520, 200, 50)
                 if back_btn.collidepoint(vx, vy):
                     state = "main"
 
             elif state == "assets":
-                # Asset selection logic
+                # Logika pemilihan aset
                 thumb_w, thumb_h, gap = 120, 120, 25
                 
-                # Snack selection
+                # Pemilihan Makanan
                 snack_start_x = (VIRTUAL_WIDTH - (len(available_snacks) * (thumb_w + gap) - gap)) // 2
                 snack_y = 250
                 for i, key in enumerate(available_snacks):
@@ -675,7 +690,7 @@ while running:
                     if r.collidepoint(vx, vy):
                         selected_snack_key = key
 
-                # Obstacle selection
+                # Pemilihan Rintangan
                 obst_start_x = (VIRTUAL_WIDTH - (len(available_obstacles) * (thumb_w + gap) - gap)) // 2
                 obst_y = 450
                 for i, key in enumerate(available_obstacles):
@@ -683,13 +698,13 @@ while running:
                     if r.collidepoint(vx, vy):
                         selected_obstacle_key = key
 
-                # Back button
+                # Tombol Kembali
                 back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, 620, 200, 50)
                 if back_btn.collidepoint(vx, vy):
                     state = "main"
 
             elif state == "pause":
-                # pause menu rects
+                # rect menu pause
                 resume_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 280, 300, 60)
                 mainmenu_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 360, 300, 60)
                 quit_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 440, 300, 60)
@@ -730,7 +745,7 @@ while running:
     # ---------- State updates ----------
     if state == "playing":
 
-        # Level progression check
+        # Periksa progres level
         if score >= 150 and game_level < 3:
             print("Victory condition met!")
             state = "victory"
@@ -747,7 +762,7 @@ while running:
                     print("Error playing victory sound:", e)
             else:
                 print("Victory sound not available")
-            # Stop processing this frame as "playing"
+            # Hentikan pemrosesan this frame as "playing"
             continue
         elif score >= 100 and game_level < 2:
             game_level = 2
@@ -778,30 +793,35 @@ while running:
 
         virtual_surface.blit(current_sky_img, (0, 0))
 
-        # draw ground tiles across width
-        # for x in range(0, VIRTUAL_WIDTH, ground_tile_img.get_width()):
-        #    virtual_surface.blit(ground_tile_img, (x, VIRTUAL_HEIGHT - GROUND_HEIGHT))
-        # gunakan current_ground_img (ground default / ground2 / ground3)
+       
         for x in range(0, VIRTUAL_WIDTH, current_ground_img.get_width()):
             virtual_surface.blit(current_ground_img, (x, VIRTUAL_HEIGHT - GROUND_HEIGHT))
 
-        # spawn logic
-        jumlah_makanan = 1 + (score // 5) # Reduced
+        # logika spawn - dengan multiplier dari difficulty
+        jumlah_makanan = int(1 + (score // 5) * difficulty_spawn_multiplier)  # Scale dengan difficulty
         if len(makanans) < jumlah_makanan:
             makanan_timer += 1
-            if makanan_timer > 45: # Slightly slower spawn
+            # Spawn time berdasarkan difficulty
+            spawn_delay_makanan = int(45 / difficulty_spawn_multiplier)  # Lebih cepat di difficulty lebih tinggi
+            if makanan_timer > spawn_delay_makanan:
                 x = randint(50, VIRTUAL_WIDTH-50)
+                # Kecepatan makanan berdasarkan difficulty berdasarkan difficulty
+                base_speed = 6 * difficulty_speed_multiplier
                 rect = pygame.Rect(x, 0, SNACK_W, SNACK_H)
-                makanans.append({"rect": rect, "speed": 6})
+                makanans.append({"rect": rect, "speed": base_speed})
                 makanan_timer = 0
 
-        jumlah_B_makanan = 1 + (score // 7) # Reduced
+        jumlah_B_makanan = int(1 + (score // 7) * difficulty_spawn_multiplier)  # Scale dengan difficulty
         if len(B_makanans) < jumlah_B_makanan:
             B_makanan_timer += 1
-            if B_makanan_timer > 60: # Slightly slower spawn
+            # Spawn time berdasarkan difficulty
+            spawn_delay_obstacle = int(60 / difficulty_spawn_multiplier)  # Lebih cepat di difficulty lebih tinggi
+            if B_makanan_timer > spawn_delay_obstacle:
                 x = randint(50, VIRTUAL_WIDTH-50)
+                # Kecepatan obstacle berdasarkan difficulty
+                base_speed_obst = randint(4, 8) * difficulty_speed_multiplier
                 rect = pygame.Rect(x, 0, OBST_W, OBST_H)
-                B_makanans.append({"rect": rect, "speed": randint(4, 8)})
+                B_makanans.append({"rect": rect, "speed": base_speed_obst})
                 B_makanan_timer = 0
 
         jumlah_golden_food = 1
@@ -810,7 +830,9 @@ while running:
             if golden_food_timer > 600: # every 10 seconds
                 x = randint(50, VIRTUAL_WIDTH-50)
                 rect = pygame.Rect(x, 0, SNACK_W, SNACK_H)
-                golden_foods.append({"rect": rect, "speed": 5})
+                # Golden food juga mengikuti difficulty speed
+                golden_speed = 5 * difficulty_speed_multiplier
+                golden_foods.append({"rect": rect, "speed": golden_speed})
                 golden_food_timer = 0
 
         jumlah_shields = 1
@@ -819,22 +841,24 @@ while running:
             if shields_timer > 900: # every 15 seconds
                 x = randint(50, VIRTUAL_WIDTH-50)
                 rect = pygame.Rect(x, 0, SNACK_W, SNACK_H)
-                shields.append({"rect": rect, "speed": 5})
+                # Shield juga mengikuti difficulty speed
+                shield_speed = 5 * difficulty_speed_multiplier
+                shields.append({"rect": rect, "speed": shield_speed})
                 shields_timer = 0
 
-        # items move
+        # item bergerak
         for makanan in makanans[:]:
             makanan["rect"].top += makanan["speed"]
             if makanan["rect"].top > VIRTUAL_HEIGHT:
                 makanans.remove(makanan)
-            # collision with player rect
+            # collision dengan rect pemain
             player_rect = pygame.Rect(player_pos[0], player_pos[1], PLAYER_W, PLAYER_H)
             if player_rect.colliderect(makanan["rect"]):
                 score += points_per_snack
                 if sfx_eat:
                     sfx_eat.play()
                 makanans.remove(makanan)
-                # Achievement check
+                # Periksa pencapaian
                 if score > 0 and score % 25 == 0 and score != last_achievement_score:
                     show_achievement = True
                     achievement_timer = current_time
@@ -938,7 +962,7 @@ while running:
             # idle
             player_image = player_idle_right if facing_right else player_idle_left
 
-        # draw items
+        # gambar item
         selected_snack_img = snack_images[selected_snack_key]
         selected_obst_img = obstacle_images[selected_obstacle_key]
         for makanan in makanans:
@@ -951,17 +975,17 @@ while running:
         for sh in shields:
             virtual_surface.blit(shield_img, (sh["rect"].x, sh["rect"].y))
 
-        # draw player
+        # gambar pemain
         if not (invincible and (frame_count // 6) % 2 == 0):
             virtual_surface.blit(player_image, (player_pos[0], player_pos[1]))
 
-        # HUD: score and lives
+        # HUD: skor dan nyawa
         draw_text(virtual_surface, f"Score: {score}", (20, 20), FONT, color=(255,255,255), outline_color=(0,0,0), outline_width=2)
-        # Draw lives
+        # Gambar nyawa
         for i in range(lives):
             virtual_surface.blit(heart_img, (VIRTUAL_WIDTH - 40 - (i * 35), 15))
 
-        # Tombol Pause di pojok kiri atas
+        # Tombol Pause di pojok kiri atas di pojok kiri atas
         pause_btn_rect = pygame.Rect(20, 60, 100, 40)
         # draw clearer pause button using regular antialiased font for in-game HUD
         pygame.draw.rect(virtual_surface, (80,80,120), pause_btn_rect, border_radius=8)
@@ -972,13 +996,13 @@ while running:
         virtual_surface.blit(pause_label, (lx, ly))
 
 
-        # Achievement display
+        # Tampilan pencapaian
         if show_achievement:
-            if current_time - achievement_timer < 3000: # Show for 3 seconds
+            if current_time - achievement_timer < 3000: # Tampilkan selama 3 detik
                 ach_text = f"Achievement! {last_achievement_score} Points!"
                 text_img = ACHIEVEMENT_FONT.render(ach_text, True, (255, 215, 0))
                 text_rect = text_img.get_rect(center=(VIRTUAL_WIDTH // 2, VIRTUAL_HEIGHT // 4))
-                # Simple background for text
+                # Latar belakang sederhana untuk teks
                 bg_rect = text_rect.inflate(20, 20)
                 pygame.draw.rect(virtual_surface, (60, 60, 80), bg_rect, border_radius=10)
                 virtual_surface.blit(text_img, text_rect)
@@ -986,19 +1010,19 @@ while running:
                 show_achievement = False
 
     else:
-        # non-playing screens: draw backgrounds and UI
+        # layar non-playing: draw backgrounds and UI
         virtual_surface.fill(COLOR_BG)  # light pink BG for menus
 
         if state == "main":
-            # blit overlay dulu sebagai dekorasi latar agar judul/menu tetap tajam
+            # blit overlay sebagai dekorasi latar dulu sebagai dekorasi latar agar judul/menu tetap tajam
             if front_overlay_img:
                 virtual_surface.blit(front_overlay_img, (0, 0))
 
-            # title (pixel-art)
+            # judul (pixel-art)
             title_img = render_pixel_text("Snack Scramble", color=(229,115,115), base_size=26, pixel_scale=5, bold=True)
             title_rect = title_img.get_rect(center=(VIRTUAL_WIDTH//2, 150))
             virtual_surface.blit(title_img, title_rect)
-            # buttons (add Level button)
+            # tombol (add Level button)
             start_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 280, 300, 60)
             char_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 360, 300, 60)
             asset_btn = pygame.Rect(VIRTUAL_WIDTH//2-150, 440, 300, 60)
@@ -1026,7 +1050,7 @@ while running:
                 rx = start_x + i*(thumb_w + gap)
                 r = pygame.Rect(rx, start_y, thumb_w, thumb_h)
                 
-                # Check if character is unlocked
+                # Periksa apakah karakter sudah terbuka
                 is_unlocked = key in save_data["unlocked_characters"]
                 bg_color = (255,255,255) if is_unlocked else (128,128,128)
                 
@@ -1042,7 +1066,7 @@ while running:
                 virtual_surface.blit(thumb_img, (rx+10, start_y+10))
                 draw_text(virtual_surface, key.capitalize(), (rx+10, start_y+thumb_h+8), FONT, COLOR_TEXT)
                 
-                # Show stats if unlocked
+                # Tampilkan stats jika terbuka
                 if is_unlocked:
                     stats = CHARACTER_STATS[key]
                     stat_y = start_y + thumb_h + 45 
@@ -1063,17 +1087,17 @@ while running:
                     desc_surf = pygame.font.SysFont("arial", 14).render(description, True, COLOR_TEXT)
                     virtual_surface.blit(desc_surf, (rx+5, desc_y))
                 else:
-                    # Show "Locked" text and unlock condition
+                    # Tampilkan teks "Terkunci" and unlock condition
                     lock_y = start_y + thumb_h + 40
                     draw_text(virtual_surface, "Locked", (rx+40, lock_y), 
                             pygame.font.SysFont("arial", 18), (200,0,0))
                     draw_text(virtual_surface, "Win game to unlock", (rx+10, lock_y+25),
                             pygame.font.SysFont("arial", 14), COLOR_TEXT)
                 
-                # highlight selected (only if unlocked)
+                # highlight yang dipilih (only if unlocked)
                 if i == selected_char_index and is_unlocked:
                     pygame.draw.rect(virtual_surface, COLOR_ACCENT_DARK, r, 4, border_radius=8)
-            # Back button
+            # Tombol Kembali
             back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, 520, 200, 50)
             draw_button(virtual_surface, back_btn, "Back", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
 
@@ -1084,7 +1108,7 @@ while running:
             
             thumb_w, thumb_h, gap = 120, 120, 25
 
-            # Draw Snack choices
+            # Gambar pilihan Makanan
             draw_text(virtual_surface, "Choose your Snack", (VIRTUAL_WIDTH//2 - 150, 180), FONT, COLOR_TEXT)
             snack_start_x = (VIRTUAL_WIDTH - (len(available_snacks) * (thumb_w + gap) - gap)) // 2
             snack_y = 250
@@ -1096,7 +1120,7 @@ while running:
                 if key == selected_snack_key:
                     pygame.draw.rect(virtual_surface, COLOR_ACCENT_DARK, r, 4, border_radius=8)
 
-            # Draw Obstacle choices
+            # Gambar pilihan Rintangan
             draw_text(virtual_surface, "Choose your Obstacle", (VIRTUAL_WIDTH//2 - 160, 380), FONT, COLOR_TEXT)
             obst_start_x = (VIRTUAL_WIDTH - (len(available_obstacles) * (thumb_w + gap) - gap)) // 2
             obst_y = 450
@@ -1108,12 +1132,12 @@ while running:
                 if key == selected_obstacle_key:
                     pygame.draw.rect(virtual_surface, COLOR_ACCENT_DARK, r, 4, border_radius=8)
 
-            # Back button
+            # Tombol Kembali
             back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, 620, 200, 50)
             draw_button(virtual_surface, back_btn, "Back", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
 
         elif state == "pause":
-            # create a semi-transparent overlay
+            # buat overlay semi-transparan
             overlay = pygame.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 128))
             virtual_surface.blit(overlay, (0,0))
@@ -1147,7 +1171,7 @@ while running:
                 if d == selected_difficulty:
                     pygame.draw.rect(virtual_surface, (30,20,10), r, 4, border_radius=8)
 
-            # Back button
+            # Tombol Kembali
             back_btn = pygame.Rect(VIRTUAL_WIDTH//2-100, start_y + len(DIFFICULTIES)*gap + 10, 200, 50)
             draw_button(virtual_surface, back_btn, "Back", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
 
@@ -1205,14 +1229,14 @@ while running:
             draw_button(virtual_surface, main_btn, "Main Menu", FONT, bg=COLOR_ACCENT, fg=COLOR_TEXT)
 
     # -------- Final scaling to screen with letterbox (maintain aspect ratio) --------
-    # calculate scale factor
+    # hitung faktor skala
     scale_w = SCREEN_WIDTH / VIRTUAL_WIDTH
     scale_h = SCREEN_HEIGHT / VIRTUAL_HEIGHT
     scale = min(scale_w, scale_h)
     new_w = int(VIRTUAL_WIDTH * scale)
     new_h = int(VIRTUAL_HEIGHT * scale)
 
-    # use nearest-neighbor scaling to keep pixel-art crisp (avoid smoothscale blur)
+    # gunakan penskalaan nearest-neighbor to keep pixel-art crisp (avoid smoothscale blur)
     scaled_surface = pygame.transform.scale(virtual_surface, (new_w, new_h))
     x_pos = (SCREEN_WIDTH - new_w) // 2
     y_pos = (SCREEN_HEIGHT - new_h) // 2
